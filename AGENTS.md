@@ -1,4 +1,4 @@
-# LLM Guide: Project Structure
+# Agents Guide: Project Structure
 
 This document gives an LLM (or any contributor) a quick map of how the project is organized and where to make changes.
 
@@ -25,6 +25,7 @@ This document gives an LLM (or any contributor) a quick map of how the project i
 ## Key Files (By Area)
 
 CLI:
+
 - `cmd/jobcli/main.go`
 - `internal/cmd/root.go`
 - `internal/cmd/search.go`
@@ -32,13 +33,16 @@ CLI:
 - `internal/cmd/proxies.go`
 
 Config:
+
 - `internal/config/config.go`
 
 Network:
+
 - `internal/network/client.go`
 - `internal/network/rotator.go`
 
 Scrapers:
+
 - `internal/scraper/interface.go`
 - `internal/scraper/registry.go`
 - `internal/scraper/indeed.go`
@@ -49,9 +53,11 @@ Scrapers:
 - `internal/scraper/common.go`
 
 Output:
+
 - `internal/export/export.go`
 
 Models:
+
 - `internal/models/job.go`
 - `internal/models/search.go`
 
@@ -74,3 +80,13 @@ Models:
 - Run all tests: `go test ./...`
 - Lint: `make lint`
 - Format: `make fmt` or `make fmt-check`
+
+## Agent Guidelines
+
+- Keep CLI output stable and backward compatible unless the user requests changes.
+- Mirror existing kong flag patterns in `internal/cmd/` when adding new options.
+- Prefer shared helpers in `internal/network/` and `internal/scraper/common.go` over per-site duplication.
+- Avoid introducing new dependencies without confirming with the user.
+- Update `docs/` when user-facing behavior or flags change.
+- Use `gofmt` or `make fmt` on modified Go files.
+- Run `go test ./...` and `make lint` when practical; report if not run.
