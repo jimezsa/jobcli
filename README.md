@@ -39,6 +39,10 @@ go build -o jobcli ./cmd/jobcli
 # search a single site
 ./jobcli linkedin "platform engineer" --remote
 
+# avoid 403s by narrowing sites or providing proxies
+./jobcli search "software engineer" --sites linkedin --location "Munich, Germany" --country de --limit 10
+./jobcli search "software engineer" --location "Munich, Germany" --country de --proxies "http://user:pass@host:port,http://host2:port"
+
 # output to CSV
 ./jobcli search "sre" --format csv --output results.csv
 
