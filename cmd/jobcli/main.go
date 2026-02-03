@@ -20,7 +20,7 @@ var (
 
 func main() {
 	cli := cmd.NewCLI()
-	applyEnvDefaults(cli)
+	applyEnvDefaults(cli, os.Args[1:])
 	versionString := buildVersion()
 
 	parser, err := kong.New(cli,
@@ -78,6 +78,11 @@ func main() {
 		ColorMode:  colorMode,
 	}
 
+	if cli.JSON && cli.Plain {
+		userInterface.Errorf("cannot combine --json and --plain")
+		os.Exit(1)
+	}
+
 	if err := kctx.Run(runCtx); err != nil {
 		userInterface.Errorf("%v", err)
 		os.Exit(1)
@@ -97,16 +102,38 @@ func buildVersion() string {
 	return fmt.Sprintf("%s (%s, %s)", version, commit, date)
 }
 
-func applyEnvDefaults(cli *cmd.CLI) {
-	if envBool("JOBCLI_JSON") {
+func applyEnvDefaults(cli *cmd.CLI, args []string) {
+	hasJSON := hasFlag(args, "--json")
+	hasPlain := hasFlag(args, "--plain")
+	hasColor := hasFlag(args, "--color")
+	hasVerbose := hasFlag(args, "--verbose")
+
+	if !hasJSON && !hasPlain && envBool("JOBCLI_JSON") {
 		cli.JSON = true
 	}
-	if envBool("JOBCLI_VERBOSE") {
+	if !hasVerbose && envBool("JOBCLI_VERBOSE") {
 		cli.Verbose = true
 	}
-	if value := os.Getenv("JOBCLI_COLOR"); value != "" {
-		cli.Color = value
+	if !hasColor {
+		if value := os.Getenv("JOBCLI_COLOR"); value != "" {
+			cli.Color = value
+		}
 	}
+}
+
+func hasFlag(args []string, name string) bool {
+	for _, arg := range args {
+		if arg == name {
+			return true
+		}
+		if strings.HasPrefix(arg, name+"=") {
+			return true
+		}
+		if arg == "--" {
+			return false
+		}
+	}
+	return false
 }
 
 func envBool(key string) bool {

@@ -29,7 +29,7 @@ func New(out io.Writer, err io.Writer, mode ColorMode, disableColor bool) *UI {
 	output := termenv.NewOutput(out)
 	errOutput := termenv.NewOutput(err)
 
-	colorEnabled := shouldEnableColor(out, mode, disableColor)
+	colorEnabled := shouldEnableColor(output, mode, disableColor)
 	return &UI{
 		Out:          out,
 		Err:          err,
@@ -39,7 +39,7 @@ func New(out io.Writer, err io.Writer, mode ColorMode, disableColor bool) *UI {
 	}
 }
 
-func shouldEnableColor(out io.Writer, mode ColorMode, disableColor bool) bool {
+func shouldEnableColor(output *termenv.Output, mode ColorMode, disableColor bool) bool {
 	if disableColor {
 		return false
 	}
@@ -54,16 +54,8 @@ func shouldEnableColor(out io.Writer, mode ColorMode, disableColor bool) bool {
 	case ColorNever:
 		return false
 	default:
-		return isTTY(out)
+		return output.ColorProfile() != termenv.Ascii
 	}
-}
-
-func isTTY(out io.Writer) bool {
-	file, ok := out.(*os.File)
-	if !ok {
-		return false
-	}
-	return termenv.IsTerminal(file.Fd())
 }
 
 func (u *UI) Errorf(format string, args ...any) {
