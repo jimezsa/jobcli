@@ -1,4 +1,4 @@
-# jobcli - Jobs in your terminal
+# 🧑‍💻 JobCLI - Jobs in your terminal
 
 ![GitHub Repo Banner](docs/assets/jobcli.png)
 

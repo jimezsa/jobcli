@@ -67,7 +67,7 @@ go build -o jobcli ./cmd/jobcli
 
 ## Output formats
 
-- Default: table when stdout is a TTY, CSV otherwise
+- Default: table when stdout is a TTY, CSV otherwise (table columns: site/title/company/url; URL is blue + clickable when color is enabled)
 - `--json`: JSON array
 - `--plain`: TSV
 - `--format=csv|json|md`: explicit format override

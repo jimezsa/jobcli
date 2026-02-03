@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MrJJimenez/jobcli/internal/models"
+	"github.com/muesli/termenv"
 )
 
 type Format string
@@ -22,7 +23,12 @@ const (
 	FormatTSV      Format = "tsv"
 )
 
-func WriteJobs(w io.Writer, jobs []models.Job, format Format) error {
+type WriteOptions struct {
+	ColorEnabled bool
+	Hyperlinks   bool
+}
+
+func WriteJobs(w io.Writer, jobs []models.Job, format Format, opts WriteOptions) error {
 	switch format {
 	case FormatJSON:
 		return writeJSON(w, jobs)
@@ -33,7 +39,7 @@ func WriteJobs(w io.Writer, jobs []models.Job, format Format) error {
 	case FormatMarkdown:
 		return writeMarkdown(w, jobs)
 	default:
-		return writeTable(w, jobs)
+		return writeTable(w, jobs, opts)
 	}
 }
 
@@ -58,11 +64,12 @@ func writeCSV(w io.Writer, jobs []models.Job, delim rune) error {
 	return writer.Error()
 }
 
-func writeTable(w io.Writer, jobs []models.Job) error {
+func writeTable(w io.Writer, jobs []models.Job, opts WriteOptions) error {
 	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(tw, strings.Join(csvHeader(), "\t"))
+	fmt.Fprintln(tw, strings.Join(tableHeader(), "\t"))
+	output := termenv.NewOutput(w)
 	for _, job := range jobs {
-		fmt.Fprintln(tw, strings.Join(csvRow(job), "\t"))
+		fmt.Fprintln(tw, strings.Join(tableRow(job, output, opts), "\t"))
 	}
 	return tw.Flush()
 }
@@ -73,11 +80,15 @@ func writeMarkdown(w io.Writer, jobs []models.Job) error {
 		return err
 	}
 	for _, job := range jobs {
+		urlLine := "  URL: -"
+		if url := safe(job.URL); url != "" {
+			urlLine = fmt.Sprintf("  URL: [Open listing](<%s>)", url)
+		}
 		lines := []string{
 			fmt.Sprintf("- **%s** (%s)", safe(job.Title), safe(job.Company)),
 			fmt.Sprintf("  Location: %s", safe(job.Location)),
 			fmt.Sprintf("  Site: %s", safe(job.Site)),
-			fmt.Sprintf("  URL: %s", safe(job.URL)),
+			urlLine,
 		}
 		if job.Remote {
 			lines = append(lines, "  Remote: yes")
@@ -151,4 +162,37 @@ func boolString(value bool) string {
 
 func safe(value string) string {
 	return strings.TrimSpace(value)
+}
+
+func tableHeader() []string {
+	return []string{
+		"site",
+		"title",
+		"company",
+		"url",
+	}
+}
+
+func tableRow(job models.Job, output *termenv.Output, opts WriteOptions) []string {
+	url := safe(job.URL)
+	displayURL := url
+	if url != "" {
+		if opts.ColorEnabled {
+			displayURL = output.String(displayURL).Foreground(output.Color("4")).String()
+		}
+		if opts.Hyperlinks {
+			displayURL = hyperlink(url, displayURL)
+		}
+	}
+	return []string{
+		safe(job.Site),
+		safe(job.Title),
+		safe(job.Company),
+		displayURL,
+	}
+}
+
+func hyperlink(url string, text string) string {
+	const esc = "\x1b"
+	return esc + "]8;;" + url + esc + "\\" + text + esc + "]8;;" + esc + "\\"
 }

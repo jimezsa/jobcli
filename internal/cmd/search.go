@@ -115,7 +115,12 @@ func runSearch(ctx *Context, query string, sitesArg string, opts SearchOptions) 
 		writer = file
 	}
 
-	return export.WriteJobs(writer, jobs, format)
+	colorEnabled := ctx.UI != nil && ctx.UI.ColorEnabled
+	hyperlinks := colorEnabled && isTTY(writer)
+	return export.WriteJobs(writer, jobs, format, export.WriteOptions{
+		ColorEnabled: colorEnabled,
+		Hyperlinks:   hyperlinks,
+	})
 }
 
 func runScrapers(ctx *Context, scrapers []scraper.Scraper, params models.SearchParams) ([]models.Job, error) {

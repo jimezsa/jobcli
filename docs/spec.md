@@ -133,7 +133,7 @@ Flag aliases:
 
 ## Output formats
 
-Default: Human-friendly tables (stdlib `text/tabwriter`) printed to `stdout`.
+Default: Human-friendly tables (stdlib `text/tabwriter`) printed to `stdout` (columns: site/title/company/url; URL is blue + clickable when color is enabled).
 
 - **JSON**: `--json` dumps a struct array. Useful for piping to `jq`.
 - **TSV**: `--plain` outputs stable tab-separated values.
