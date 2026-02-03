@@ -37,9 +37,9 @@ type SearchOptions struct {
 	Limit    int    `help:"Maximum results." env:"JOBCLI_DEFAULT_LIMIT"`
 	Offset   int    `help:"Offset for pagination."`
 	Remote   bool   `help:"Remote-only roles."`
-	JobType  string `help:"Job type filter (fulltime, parttime, contract, internship)." enum:"fulltime,parttime,contract,internship"`
+	JobType  string `help:"Job type filter (fulltime, parttime, contract, internship)." enum:",fulltime,parttime,contract,internship" default:""`
 	Hours    int    `help:"Jobs posted in the last N hours."`
-	Format   string `help:"Output format: csv, json, md." enum:"csv,json,md"`
+	Format   string `help:"Output format: csv, json, md." enum:",csv,json,md" default:""`
 	Output   string `name:"output" short:"o" help:"Write output to a file."`
 	Out      string `name:"out" help:"Alias for --output."`
 	File     string `name:"file" help:"Alias for --output."`
