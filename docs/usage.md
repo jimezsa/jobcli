@@ -62,15 +62,17 @@ go build -o jobcli ./cmd/jobcli
 - `--hours`
 - `--country`
 - `--format=csv|json|md`
+- `--links=short|full`
 - `--output` (aliases: `--out`, `--file`)
 - `--proxies` (comma-separated URLs)
 
 ## Output formats
 
-- Default: table when stdout is a TTY, CSV otherwise (table columns: site/title/company/url; URL is blue + clickable when color is enabled)
+- Default: table when stdout is a TTY, CSV otherwise (table columns: site/title/company/url; URL is blue)
 - `--json`: JSON array
 - `--plain`: TSV
 - `--format=csv|json|md`: explicit format override
+- `--links=short|full`: table URL display (default `full`, `short` only applies when terminal hyperlinks are supported)
 
 ## Config
 

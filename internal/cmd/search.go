@@ -40,6 +40,7 @@ type SearchOptions struct {
 	JobType  string `help:"Job type filter (fulltime, parttime, contract, internship)." enum:",fulltime,parttime,contract,internship" default:""`
 	Hours    int    `help:"Jobs posted in the last N hours."`
 	Format   string `help:"Output format: csv, json, md." enum:",csv,json,md" default:""`
+	Links    string `help:"Table link display: short or full." enum:"short,full" default:"full"`
 	Output   string `name:"output" short:"o" help:"Write output to a file."`
 	Out      string `name:"out" help:"Alias for --output."`
 	File     string `name:"file" help:"Alias for --output."`
@@ -117,9 +118,14 @@ func runSearch(ctx *Context, query string, sitesArg string, opts SearchOptions) 
 
 	colorEnabled := ctx.UI != nil && ctx.UI.ColorEnabled
 	hyperlinks := colorEnabled && isTTY(writer)
+	linkStyle := export.LinkStyleShort
+	if strings.EqualFold(opts.Links, string(export.LinkStyleFull)) {
+		linkStyle = export.LinkStyleFull
+	}
 	return export.WriteJobs(writer, jobs, format, export.WriteOptions{
 		ColorEnabled: colorEnabled,
 		Hyperlinks:   hyperlinks,
+		LinkStyle:    linkStyle,
 	})
 }
 

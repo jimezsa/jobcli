@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -26,7 +27,15 @@ const (
 type WriteOptions struct {
 	ColorEnabled bool
 	Hyperlinks   bool
+	LinkStyle    LinkStyle
 }
+
+type LinkStyle string
+
+const (
+	LinkStyleShort LinkStyle = "short"
+	LinkStyleFull  LinkStyle = "full"
+)
 
 func WriteJobs(w io.Writer, jobs []models.Job, format Format, opts WriteOptions) error {
 	switch format {
@@ -174,11 +183,17 @@ func tableHeader() []string {
 }
 
 func tableRow(job models.Job, output *termenv.Output, opts WriteOptions) []string {
+	const linkColor = "#87CEEB"
+
 	url := safe(job.URL)
-	displayURL := url
+	displayURL := "-"
 	if url != "" {
+		displayURL = url
+		if opts.LinkStyle == LinkStyleShort && opts.Hyperlinks {
+			displayURL = shortURLLabel(url)
+		}
 		if opts.ColorEnabled {
-			displayURL = output.String(displayURL).Foreground(output.Color("4")).String()
+			displayURL = output.String(displayURL).Foreground(output.Color(linkColor)).String()
 		}
 		if opts.Hyperlinks {
 			displayURL = hyperlink(url, displayURL)
@@ -195,4 +210,23 @@ func tableRow(job models.Job, output *termenv.Output, opts WriteOptions) []strin
 func hyperlink(url string, text string) string {
 	const esc = "\x1b"
 	return esc + "]8;;" + url + esc + "\\" + text + esc + "]8;;" + esc + "\\"
+}
+
+func shortURLLabel(raw string) string {
+	const maxLen = 60
+	label := strings.TrimSpace(raw)
+	if parsed, err := url.Parse(raw); err == nil {
+		host := strings.TrimPrefix(parsed.Host, "www.")
+		if host != "" {
+			label = host + parsed.Path
+		}
+	}
+	label = strings.TrimSpace(label)
+	if label == "" {
+		label = raw
+	}
+	if len(label) > maxLen {
+		label = label[:maxLen-3] + "..."
+	}
+	return label
 }

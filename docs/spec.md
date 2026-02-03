@@ -124,6 +124,7 @@ Flag aliases:
   - `--hours`: Filter jobs posted in the last N hours.
   - `--country`: Subdomain for Indeed/Glassdoor (e.g., `uk`, `ca`).
   - `--format`: `csv|json|md` (defaults to `csv` or table depending on TTY).
+  - `--links`: `short|full` (table URL display; default `full`, `short` only applies when terminal hyperlinks are supported).
 - `jobcli linkedin <query> ...`
   - Direct access to LinkedIn scraper with site-specific flags (if any).
 - `jobcli indeed <query> ...`
@@ -133,7 +134,7 @@ Flag aliases:
 
 ## Output formats
 
-Default: Human-friendly tables (stdlib `text/tabwriter`) printed to `stdout` (columns: site/title/company/url; URL is blue + clickable when color is enabled).
+Default: Human-friendly tables (stdlib `text/tabwriter`) printed to `stdout` (columns: site/title/company/url; URL is blue).
 
 - **JSON**: `--json` dumps a struct array. Useful for piping to `jq`.
 - **TSV**: `--plain` outputs stable tab-separated values.
