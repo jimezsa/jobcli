@@ -6,18 +6,18 @@ import (
 	"errors"
 	"fmt"
 	"html"
-	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	fhttp "github.com/bogdanfinn/fhttp"
 	"github.com/MrJJimenez/jobcli/internal/models"
 	"github.com/MrJJimenez/jobcli/internal/network"
 	"github.com/PuerkitoBio/goquery"
 )
 
 func fetchDocument(ctx context.Context, client *network.Client, target string, headers map[string]string) (*goquery.Document, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
+	req, err := fhttp.NewRequestWithContext(ctx, fhttp.MethodGet, target, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func fetchDocument(ctx context.Context, client *network.Client, target string, h
 	return doc, nil
 }
 
-func applyHeaders(req *http.Request, headers map[string]string) {
+func applyHeaders(req *fhttp.Request, headers map[string]string) {
 	if headers == nil {
 		headers = map[string]string{}
 	}
@@ -294,10 +294,6 @@ func stringValue(values ...any) string {
 			if strings.TrimSpace(v) != "" {
 				return strings.TrimSpace(v)
 			}
-		case fmt.Stringer:
-			if v.String() != "" {
-				return strings.TrimSpace(v.String())
-			}
 		case float64:
 			return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.2f", v), "0"), ".")
 		case int:
@@ -306,6 +302,10 @@ func stringValue(values ...any) string {
 			return fmt.Sprintf("%d", v)
 		case json.Number:
 			return v.String()
+		case fmt.Stringer:
+			if v.String() != "" {
+				return strings.TrimSpace(v.String())
+			}
 		case map[string]any:
 			if name := stringValue(v["name"]); name != "" {
 				return name

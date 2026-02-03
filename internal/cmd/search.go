@@ -269,9 +269,6 @@ func defaultInt(value, fallback int) int {
 }
 
 func isTTY(out io.Writer) bool {
-	file, ok := out.(*os.File)
-	if !ok {
-		return false
-	}
-	return termenv.IsTerminal(file.Fd())
+	output := termenv.NewOutput(out)
+	return output.ColorProfile() != termenv.Ascii
 }

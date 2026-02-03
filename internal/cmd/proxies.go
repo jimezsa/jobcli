@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strings"
 	"text/tabwriter"
 	"time"
 
+	fhttp "github.com/bogdanfinn/fhttp"
 	"github.com/MrJJimenez/jobcli/internal/config"
 	"github.com/MrJJimenez/jobcli/internal/network"
 )
@@ -56,7 +56,7 @@ func (p *ProxyCheckCmd) Run(ctx *Context) error {
 			continue
 		}
 
-		req, err := http.NewRequest(http.MethodGet, p.Target, nil)
+		req, err := fhttp.NewRequest(fhttp.MethodGet, p.Target, nil)
 		if err != nil {
 			result.Status = "error"
 			result.Error = err.Error()
@@ -82,7 +82,7 @@ func (p *ProxyCheckCmd) Run(ctx *Context) error {
 	return writeProxyResults(ctx, results)
 }
 
-func doWithTimeout(client *network.Client, req *http.Request, timeout time.Duration) (*http.Response, error) {
+func doWithTimeout(client *network.Client, req *fhttp.Request, timeout time.Duration) (*fhttp.Response, error) {
 	ctx, cancel := context.WithTimeout(req.Context(), timeout)
 	defer cancel()
 	return client.Do(req.WithContext(ctx))

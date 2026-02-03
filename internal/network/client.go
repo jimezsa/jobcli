@@ -3,11 +3,11 @@ package network
 import (
 	"errors"
 	"math/rand"
-	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 	"time"
 
+	fhttp "github.com/bogdanfinn/fhttp"
+	fhttpcookiejar "github.com/bogdanfinn/fhttp/cookiejar"
 	tls_client "github.com/bogdanfinn/tls-client"
 	"github.com/bogdanfinn/tls-client/profiles"
 )
@@ -22,7 +22,7 @@ type Client struct {
 }
 
 func NewClient(rotator *Rotator) (*Client, error) {
-	jar, _ := cookiejar.New(nil)
+	jar, _ := fhttpcookiejar.New(nil)
 
 	client, err := tls_client.NewHttpClient(
 		tls_client.NewNoopLogger(),
@@ -43,7 +43,7 @@ func NewClient(rotator *Rotator) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) Do(req *http.Request) (*http.Response, error) {
+func (c *Client) Do(req *fhttp.Request) (*fhttp.Response, error) {
 	proxy, _ := c.rotateProxy()
 	if req.Header.Get("User-Agent") == "" {
 		req.Header.Set("User-Agent", c.randomUA())

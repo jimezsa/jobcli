@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"net/http"
 	"net/url"
 	"strings"
 
@@ -27,22 +26,7 @@ func (i *Indeed) Name() string {
 
 func (i *Indeed) Search(ctx context.Context, params models.SearchParams) ([]models.Job, error) {
 	searchURL := buildIndeedURL(params)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, searchURL, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := i.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("indeed: http %d", resp.StatusCode)
-	}
-
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	doc, err := fetchDocument(ctx, i.client, searchURL, nil)
 	if err != nil {
 		return nil, err
 	}
