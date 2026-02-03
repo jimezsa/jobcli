@@ -33,6 +33,9 @@ go build -o jobcli ./cmd/jobcli
 # search all sites
 ./jobcli search "golang" --location "New York, NY" --limit 25
 
+# search software engineer roles in Munich, Germany
+./jobcli search "software engineer" --location "Munich, Germany" --country de --limit 25
+
 # search a single site
 ./jobcli linkedin "platform engineer" --remote
 
