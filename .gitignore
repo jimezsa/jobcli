@@ -41,3 +41,9 @@ Thumbs.db
 node_modules/
 jspm_packages/
 .npm
+
+# Go build artifacts #
+/jobcli
+/jobcli.exe
+/bin/
+/dist/

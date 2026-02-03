@@ -128,3 +128,8 @@ Environment variables:
 
 - Scrapers are best-effort and may require selector updates as sites change.
 - Heavy usage may require rotating proxies.
+
+## Inspiration
+
+- JobSpy: https://github.com/speedyapply/JobSpy
+- gogcli: https://github.com/steipete/gogcli
