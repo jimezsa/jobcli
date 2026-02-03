@@ -7,11 +7,11 @@ import (
 )
 
 const (
-	SiteLinkedIn    = "linkedin"
-	SiteIndeed      = "indeed"
-	SiteGlassdoor   = "glassdoor"
+	SiteLinkedIn     = "linkedin"
+	SiteIndeed       = "indeed"
+	SiteGlassdoor    = "glassdoor"
 	SiteZipRecruiter = "ziprecruiter"
-	SiteGoogleJobs  = "google"
+	SiteGoogleJobs   = "google"
 )
 
 func Registry(rotator *network.Rotator) (map[string]Scraper, error) {

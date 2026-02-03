@@ -13,23 +13,23 @@ type CLI struct {
 
 	VersionFlag kong.VersionFlag `help:"Print version."`
 
-	Version     VersionCmd     `cmd:"" help:"Print version."`
-	Config      ConfigCmd      `cmd:"" help:"Manage configuration."`
-	Search      SearchCmd      `cmd:"" help:"Search job listings."`
-	LinkedIn    SiteCmd        `cmd:"" name:"linkedin" help:"Search LinkedIn."`
-	Indeed      SiteCmd        `cmd:"" name:"indeed" help:"Search Indeed."`
-	Glassdoor   SiteCmd        `cmd:"" name:"glassdoor" help:"Search Glassdoor."`
-	ZipRecruiter SiteCmd       `cmd:"" name:"ziprecruiter" help:"Search ZipRecruiter."`
-	Google      SiteCmd        `cmd:"" name:"google" help:"Search Google Jobs."`
-	Proxies     ProxiesCmd     `cmd:"" help:"Proxy utilities."`
+	Version      VersionCmd `cmd:"" help:"Print version."`
+	Config       ConfigCmd  `cmd:"" help:"Manage configuration."`
+	Search       SearchCmd  `cmd:"" help:"Search job listings."`
+	LinkedIn     SiteCmd    `cmd:"" name:"linkedin" help:"Search LinkedIn."`
+	Indeed       SiteCmd    `cmd:"" name:"indeed" help:"Search Indeed."`
+	Glassdoor    SiteCmd    `cmd:"" name:"glassdoor" help:"Search Glassdoor."`
+	ZipRecruiter SiteCmd    `cmd:"" name:"ziprecruiter" help:"Search ZipRecruiter."`
+	Google       SiteCmd    `cmd:"" name:"google" help:"Search Google Jobs."`
+	Proxies      ProxiesCmd `cmd:"" help:"Proxy utilities."`
 }
 
 func NewCLI() *CLI {
 	return &CLI{
-		LinkedIn:    SiteCmd{Site: scraper.SiteLinkedIn},
-		Indeed:      SiteCmd{Site: scraper.SiteIndeed},
-		Glassdoor:   SiteCmd{Site: scraper.SiteGlassdoor},
+		LinkedIn:     SiteCmd{Site: scraper.SiteLinkedIn},
+		Indeed:       SiteCmd{Site: scraper.SiteIndeed},
+		Glassdoor:    SiteCmd{Site: scraper.SiteGlassdoor},
 		ZipRecruiter: SiteCmd{Site: scraper.SiteZipRecruiter},
-		Google:      SiteCmd{Site: scraper.SiteGoogleJobs},
+		Google:       SiteCmd{Site: scraper.SiteGoogleJobs},
 	}
 }

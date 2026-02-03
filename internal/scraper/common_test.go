@@ -98,20 +98,20 @@ func TestParseJSONLDJobs(t *testing.T) {
 
 func TestJSONLDSalaryAndLocation(t *testing.T) {
 	job := jobFromJobPosting(map[string]any{
-		"title": "SRE",
+		"title":              "SRE",
 		"hiringOrganization": map[string]any{"name": "Gamma"},
-		"url": "https://example.com/job3",
+		"url":                "https://example.com/job3",
 		"baseSalary": map[string]any{
 			"currency": "USD",
-			"value": map[string]any{"minValue": 100000, "maxValue": 150000},
+			"value":    map[string]any{"minValue": 100000, "maxValue": 150000},
 		},
 		"jobLocation": map[string]any{
 			"address": map[string]any{
-				"streetAddress": "1 Main",
+				"streetAddress":   "1 Main",
 				"addressLocality": "Denver",
-				"addressRegion": "CO",
-				"postalCode": "80202",
-				"addressCountry": "US",
+				"addressRegion":   "CO",
+				"postalCode":      "80202",
+				"addressCountry":  "US",
 			},
 		},
 		"description": strings.Repeat("a", 300),

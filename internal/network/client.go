@@ -18,7 +18,7 @@ type Client struct {
 	http       tls_client.HttpClient
 	rotator    *Rotator
 	userAgents []string
-	rand        *rand.Rand
+	rand       *rand.Rand
 }
 
 func NewClient(rotator *Rotator) (*Client, error) {
@@ -39,7 +39,7 @@ func NewClient(rotator *Rotator) (*Client, error) {
 		http:       client,
 		rotator:    rotator,
 		userAgents: append([]string{}, userAgents...),
-		rand:        rng,
+		rand:       rng,
 	}, nil
 }
 
