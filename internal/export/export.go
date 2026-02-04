@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/MrJJimenez/jobcli/internal/models"
+	"github.com/MrJJimenez/jobcli/internal/ui"
 	"github.com/muesli/termenv"
 )
 
@@ -183,8 +184,6 @@ func tableHeader() []string {
 }
 
 func tableRow(job models.Job, output *termenv.Output, opts WriteOptions) []string {
-	const linkColor = "#87CEEB"
-
 	url := safe(job.URL)
 	displayURL := "-"
 	if url != "" {
@@ -192,9 +191,7 @@ func tableRow(job models.Job, output *termenv.Output, opts WriteOptions) []strin
 		if opts.LinkStyle == LinkStyleShort && opts.Hyperlinks {
 			displayURL = shortURLLabel(url)
 		}
-		if opts.ColorEnabled {
-			displayURL = output.String(displayURL).Foreground(output.Color(linkColor)).String()
-		}
+		displayURL = ui.ColorizeLink(output, opts.ColorEnabled, displayURL)
 		if opts.Hyperlinks {
 			displayURL = hyperlink(url, displayURL)
 		}

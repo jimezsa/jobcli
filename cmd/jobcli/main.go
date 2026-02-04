@@ -19,6 +19,11 @@ var (
 )
 
 func main() {
+	if len(os.Args) == 1 {
+		printOverview()
+		return
+	}
+
 	cli := cmd.NewCLI()
 	applyEnvDefaults(cli, os.Args[1:])
 	versionString := buildVersion()
@@ -87,6 +92,63 @@ func main() {
 		userInterface.Errorf("%v", err)
 		os.Exit(1)
 	}
+}
+
+func printOverview() {
+	colorMode := ui.NormalizeColorMode(os.Getenv("JOBCLI_COLOR"))
+	disableColor := envBool("JOBCLI_JSON")
+	userInterface := ui.New(os.Stdout, os.Stderr, colorMode, disableColor)
+
+	header := "🧑‍💻 JobCLI - Jobs in your terminal"
+	description := "Fast, single-binary job aggregation CLI that scrapes multiple sites in parallel and exports results to table, CSV, TSV, JSON, or Markdown."
+
+	fmt.Fprintln(os.Stdout, userInterface.LinkText(header))
+	fmt.Fprintln(os.Stdout, description)
+	fmt.Fprintln(os.Stdout)
+
+	commands := []struct {
+		Name string
+		Desc string
+	}{
+		{Name: "search", Desc: "Search job listings."},
+		{Name: "linkedin", Desc: "Search LinkedIn."},
+		{Name: "indeed", Desc: "Search Indeed."},
+		{Name: "glassdoor", Desc: "Search Glassdoor."},
+		{Name: "ziprecruiter", Desc: "Search ZipRecruiter."},
+		{Name: "google", Desc: "Search Google Jobs."},
+		{Name: "config", Desc: "Manage configuration."},
+		{Name: "proxies", Desc: "Proxy utilities."},
+		{Name: "version", Desc: "Print version."},
+		{Name: "help", Desc: "Show help."},
+	}
+
+	maxLen := 0
+	for _, cmd := range commands {
+		if len(cmd.Name) > maxLen {
+			maxLen = len(cmd.Name)
+		}
+	}
+
+	fmt.Fprintln(os.Stdout, "Commands:")
+	for _, cmd := range commands {
+		padding := strings.Repeat(" ", maxLen-len(cmd.Name))
+		fmt.Fprintf(os.Stdout, "  %s%s  %s\n", userInterface.LinkText(cmd.Name), padding, cmd.Desc)
+	}
+	fmt.Fprintln(os.Stdout)
+
+	fmt.Fprintln(os.Stdout, "Usage:")
+	fmt.Fprintln(os.Stdout, "  jobcli search \"<query>\" [--location L] [--sites S] [--limit N] [--format csv|json|md]")
+	fmt.Fprintln(os.Stdout, "  jobcli <site> \"<query>\" [flags]")
+	fmt.Fprintln(os.Stdout)
+
+	fmt.Fprintln(os.Stdout, "Example:")
+	fmt.Fprintln(os.Stdout, "  jobcli search \"golang\" --location \"New York, NY\" --limit 25")
+	fmt.Fprintln(os.Stdout, "  jobcli google \"data engineer\" --remote --format json")
+	fmt.Fprintln(os.Stdout)
+
+	fmt.Fprintln(os.Stdout, "Help:")
+	fmt.Fprintln(os.Stdout, "  jobcli --help")
+	fmt.Fprintln(os.Stdout, "  jobcli help")
 }
 
 func buildVersion() string {

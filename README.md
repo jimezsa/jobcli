@@ -29,6 +29,9 @@ go build -o jobcli ./cmd/jobcli
 ## Quick Start
 
 ```bash
+# show overview and command list
+./jobcli
+
 # initialize config and proxies
 ./jobcli config init
 

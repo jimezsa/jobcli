@@ -17,6 +17,8 @@ const (
 	ColorNever  ColorMode = "never"
 )
 
+const LinkColor = "#87CEEB"
+
 type UI struct {
 	Out          io.Writer
 	Err          io.Writer
@@ -92,6 +94,17 @@ func (u *UI) Successf(format string, args ...any) {
 		msg = u.Output.String(msg).Foreground(u.Output.Color("2")).String()
 	}
 	fmt.Fprintln(u.Out, msg)
+}
+
+func ColorizeLink(output *termenv.Output, enabled bool, text string) string {
+	if !enabled || output == nil {
+		return text
+	}
+	return output.String(text).Foreground(output.Color(LinkColor)).String()
+}
+
+func (u *UI) LinkText(text string) string {
+	return ColorizeLink(u.Output, u.ColorEnabled, text)
 }
 
 func NormalizeColorMode(value string) ColorMode {
