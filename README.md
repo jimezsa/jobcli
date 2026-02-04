@@ -18,12 +18,18 @@ Fast, single-binary job aggregation CLI written in Go. Scrapes multiple sites in
 
 ## Install
 
-```bash
-# build
-make fmt
-make test
+### Build from source
 
-go build -o jobcli ./cmd/jobcli
+```bash
+git clone https://github.com/MrJJimenez/jobcli
+cd jobcli
+make
+```
+
+Run:
+
+```bash
+./cmd/jobcli --help
 ```
 
 ## Quick Start

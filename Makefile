@@ -2,9 +2,14 @@ TOOLS_DIR := .tools
 GOBIN := $(abspath $(TOOLS_DIR))
 export GOBIN
 
+.DEFAULT_GOAL := build
+
 GOFILES := $(shell find . -name '*.go' -not -path './.tools/*' -not -path './vendor/*')
 
-.PHONY: tools fmt fmt-check lint test
+.PHONY: build tools fmt fmt-check lint test
+
+build:
+	@go build -o jobcli ./cmd/jobcli
 
 tools:
 	@mkdir -p $(TOOLS_DIR)
