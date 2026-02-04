@@ -19,7 +19,7 @@ var (
 )
 
 func main() {
-	if len(os.Args) == 1 {
+	if len(os.Args) == 1 || isTopLevelHelp(os.Args[1:]) {
 		printOverview()
 		return
 	}
@@ -205,6 +205,18 @@ func envBool(key string) bool {
 	}
 	switch strings.ToLower(value) {
 	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
+}
+
+func isTopLevelHelp(args []string) bool {
+	if len(args) != 1 {
+		return false
+	}
+	switch args[0] {
+	case "--help", "-h", "help":
 		return true
 	default:
 		return false

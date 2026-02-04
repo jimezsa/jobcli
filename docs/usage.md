@@ -5,7 +5,9 @@ This document describes how to build, configure, and use `jobcli`.
 ## Build
 
 ```bash
-go build -o jobcli ./cmd/jobcli
+make
+# or:
+# go build -o jobcli ./cmd/jobcli
 ```
 
 ## Quick start
