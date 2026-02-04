@@ -90,6 +90,11 @@ func runSearch(ctx *Context, query string, sitesArg string, opts SearchOptions) 
 		return err
 	}
 
+	stopIndicator := startSearchIndicator(ctx)
+	if stopIndicator != nil {
+		defer stopIndicator()
+	}
+
 	jobs, err := runScrapers(ctx, selected, params)
 	if err != nil {
 		return err
@@ -282,4 +287,43 @@ func defaultInt(value, fallback int) int {
 func isTTY(out io.Writer) bool {
 	output := termenv.NewOutput(out)
 	return output.ColorProfile() != termenv.Ascii
+}
+
+func startSearchIndicator(ctx *Context) func() {
+	if ctx == nil || ctx.Err == nil || ctx.UI == nil {
+		return nil
+	}
+	if !isTTY(ctx.Err) {
+		return nil
+	}
+
+	done := make(chan struct{})
+	stopped := make(chan struct{})
+
+	go func() {
+		defer close(stopped)
+		start := time.Now()
+		frames := []string{"|", "/", "-", "\\"}
+		ticker := time.NewTicker(200 * time.Millisecond)
+		defer ticker.Stop()
+		index := 0
+
+		for {
+			select {
+			case <-done:
+				fmt.Fprint(ctx.Err, "\r\033[2K")
+				return
+			case <-ticker.C:
+				seconds := int(time.Since(start).Seconds())
+				frame := frames[index%len(frames)]
+				fmt.Fprintf(ctx.Err, "\r\033[2KSearching... %ds %s", seconds, frame)
+				index++
+			}
+		}
+	}()
+
+	return func() {
+		close(done)
+		<-stopped
+	}
 }
