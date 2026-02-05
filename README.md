@@ -147,3 +147,7 @@ Environment variables:
 
 - JobSpy: https://github.com/speedyapply/JobSpy
 - gogcli: https://github.com/steipete/gogcli
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
