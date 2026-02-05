@@ -43,6 +43,7 @@ make
 - `jobcli glassdoor <query> ...`
 - `jobcli ziprecruiter <query> ...`
 - `jobcli google <query> ...`
+- `jobcli stepstone <query> ...`
 - `jobcli proxies check`
 
 ## Global flags

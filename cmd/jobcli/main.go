@@ -122,6 +122,7 @@ func printOverview() {
 		{Name: "glassdoor", Desc: "Search Glassdoor."},
 		{Name: "ziprecruiter", Desc: "Search ZipRecruiter."},
 		{Name: "google", Desc: "Search Google Jobs."},
+		{Name: "stepstone", Desc: "Search Stepstone."},
 		{Name: "config", Desc: "Manage configuration."},
 		{Name: "proxies", Desc: "Proxy utilities."},
 		{Name: "version", Desc: "Print version."},

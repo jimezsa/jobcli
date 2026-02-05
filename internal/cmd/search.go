@@ -296,6 +296,8 @@ func expandAliases(sites []string) []string {
 			out = append(out, scraper.SiteGoogleJobs)
 		case "zip", "zip-recruiter":
 			out = append(out, scraper.SiteZipRecruiter)
+		case "stepstone.de", "stepstone-de":
+			out = append(out, scraper.SiteStepstone)
 		default:
 			out = append(out, site)
 		}

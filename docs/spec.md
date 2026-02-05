@@ -9,6 +9,7 @@ Build a single, clean, high-performance Go CLI that aggregates job postings from
 - Glassdoor
 - ZipRecruiter
 - Google Jobs
+- Stepstone
 
 This replaces the existing Python `JobSpy` library conceptually, but:
 

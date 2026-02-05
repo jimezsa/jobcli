@@ -21,6 +21,7 @@ type CLI struct {
 	Glassdoor    SiteCmd    `cmd:"" name:"glassdoor" help:"Search Glassdoor."`
 	ZipRecruiter SiteCmd    `cmd:"" name:"ziprecruiter" help:"Search ZipRecruiter."`
 	Google       SiteCmd    `cmd:"" name:"google" help:"Search Google Jobs."`
+	Stepstone    SiteCmd    `cmd:"" name:"stepstone" help:"Search Stepstone."`
 	Proxies      ProxiesCmd `cmd:"" help:"Proxy utilities."`
 }
 
@@ -31,5 +32,6 @@ func NewCLI() *CLI {
 		Glassdoor:    SiteCmd{Site: scraper.SiteGlassdoor},
 		ZipRecruiter: SiteCmd{Site: scraper.SiteZipRecruiter},
 		Google:       SiteCmd{Site: scraper.SiteGoogleJobs},
+		Stepstone:    SiteCmd{Site: scraper.SiteStepstone},
 	}
 }

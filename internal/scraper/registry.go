@@ -12,6 +12,7 @@ const (
 	SiteGlassdoor    = "glassdoor"
 	SiteZipRecruiter = "ziprecruiter"
 	SiteGoogleJobs   = "google"
+	SiteStepstone    = "stepstone"
 )
 
 func Registry(rotator *network.Rotator) (map[string]Scraper, error) {
@@ -39,6 +40,10 @@ func Registry(rotator *network.Rotator) (map[string]Scraper, error) {
 	if err != nil {
 		return nil, err
 	}
+	stepstone, err := makeClient()
+	if err != nil {
+		return nil, err
+	}
 
 	return map[string]Scraper{
 		SiteLinkedIn:     NewLinkedIn(linkedIn),
@@ -46,6 +51,7 @@ func Registry(rotator *network.Rotator) (map[string]Scraper, error) {
 		SiteGlassdoor:    NewGlassdoor(glassdoor),
 		SiteZipRecruiter: NewZipRecruiter(zipRecruiter),
 		SiteGoogleJobs:   NewGoogleJobs(googleJobs),
+		SiteStepstone:    NewStepstone(stepstone),
 	}, nil
 }
 
