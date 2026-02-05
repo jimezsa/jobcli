@@ -99,11 +99,17 @@ func printOverview() {
 	disableColor := envBool("JOBCLI_JSON")
 	userInterface := ui.New(os.Stdout, os.Stderr, colorMode, disableColor)
 
-	header := "🧑‍💻 JobCLI - Jobs in your terminal"
+	header := "JobCLI - Jobs in your terminal"
+	emoji := "🧑‍💻"
 	description := "Fast, single-binary job aggregation CLI that scrapes multiple sites in parallel and exports results to table, CSV, TSV, JSON, or Markdown."
 
-	fmt.Fprintln(os.Stdout, userInterface.LinkText(header))
-	fmt.Fprintln(os.Stdout, description)
+	fmt.Fprintln(os.Stdout, userInterface.LinkText(emoji+" "+header+"\n"+description))
+	fmt.Fprintln(os.Stdout)
+
+	fmt.Fprintln(os.Stdout, "Usage: jobcli [options] [command]")
+	fmt.Fprintln(os.Stdout)
+	fmt.Fprintln(os.Stdout, "Options:")
+	fmt.Fprintln(os.Stdout, "  -h, --help        display help for command")
 	fmt.Fprintln(os.Stdout)
 
 	commands := []struct {
@@ -119,7 +125,6 @@ func printOverview() {
 		{Name: "config", Desc: "Manage configuration."},
 		{Name: "proxies", Desc: "Proxy utilities."},
 		{Name: "version", Desc: "Print version."},
-		{Name: "help", Desc: "Show help."},
 	}
 
 	maxLen := 0
@@ -136,19 +141,9 @@ func printOverview() {
 	}
 	fmt.Fprintln(os.Stdout)
 
-	fmt.Fprintln(os.Stdout, "Usage:")
-	fmt.Fprintln(os.Stdout, "  jobcli search \"<query>\" [--location L] [--sites S] [--limit N] [--format csv|json|md]")
-	fmt.Fprintln(os.Stdout, "  jobcli <site> \"<query>\" [flags]")
-	fmt.Fprintln(os.Stdout)
-
-	fmt.Fprintln(os.Stdout, "Example:")
+	fmt.Fprintln(os.Stdout, "Examples:")
 	fmt.Fprintln(os.Stdout, "  jobcli search \"golang\" --location \"New York, NY\" --limit 25")
 	fmt.Fprintln(os.Stdout, "  jobcli google \"data engineer\" --remote --format json")
-	fmt.Fprintln(os.Stdout)
-
-	fmt.Fprintln(os.Stdout, "Help:")
-	fmt.Fprintln(os.Stdout, "  jobcli --help")
-	fmt.Fprintln(os.Stdout, "  jobcli help")
 }
 
 func buildVersion() string {
