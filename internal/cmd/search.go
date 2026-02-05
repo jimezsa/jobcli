@@ -95,10 +95,11 @@ func runSearch(ctx *Context, query string, sitesArg string, opts SearchOptions) 
 		defer stopIndicator()
 	}
 
-	jobs, err := runScrapers(ctx, selected, params)
+	jobs, failures, err := runScrapers(selected, params)
 	if err != nil {
 		return err
 	}
+	reportScraperFailures(ctx, failures)
 
 	if params.Limit > 0 && len(jobs) > params.Limit {
 		jobs = jobs[:params.Limit]
@@ -134,7 +135,7 @@ func runSearch(ctx *Context, query string, sitesArg string, opts SearchOptions) 
 	})
 }
 
-func runScrapers(ctx *Context, scrapers []scraper.Scraper, params models.SearchParams) ([]models.Job, error) {
+func runScrapers(scrapers []scraper.Scraper, params models.SearchParams) ([]models.Job, []scraperFailure, error) {
 	var (
 		wg      sync.WaitGroup
 		results = make(chan scraperResult, len(scrapers))
@@ -152,16 +153,17 @@ func runScrapers(ctx *Context, scrapers []scraper.Scraper, params models.SearchP
 	wg.Wait()
 	close(results)
 
-	var all []models.Job
+	var (
+		all      []models.Job
+		failures []scraperFailure
+	)
 	for res := range results {
 		if res.err != nil {
-			if errors.Is(res.err, scraper.ErrNotImplemented) {
-				if ctx.Verbose {
-					ctx.UI.Warnf("%s scraper: %v", res.site, res.err)
-				}
-				continue
-			}
-			ctx.UI.Warnf("%s scraper error: %v", res.site, res.err)
+			failures = append(failures, scraperFailure{
+				site:           res.site,
+				err:            res.err,
+				notImplemented: errors.Is(res.err, scraper.ErrNotImplemented),
+			})
 			continue
 		}
 		all = append(all, res.jobs...)
@@ -171,13 +173,46 @@ func runScrapers(ctx *Context, scrapers []scraper.Scraper, params models.SearchP
 		return strings.ToLower(all[i].Site) < strings.ToLower(all[j].Site)
 	})
 
-	return all, nil
+	sort.SliceStable(failures, func(i, j int) bool {
+		return strings.ToLower(failures[i].site) < strings.ToLower(failures[j].site)
+	})
+
+	return all, failures, nil
 }
 
 type scraperResult struct {
 	site string
 	jobs []models.Job
 	err  error
+}
+
+type scraperFailure struct {
+	site           string
+	err            error
+	notImplemented bool
+}
+
+func reportScraperFailures(ctx *Context, failures []scraperFailure) {
+	if ctx == nil || ctx.UI == nil {
+		return
+	}
+
+	visible := failures[:0]
+	for _, failure := range failures {
+		if failure.notImplemented && !ctx.Verbose {
+			continue
+		}
+		visible = append(visible, failure)
+	}
+
+	if len(visible) == 0 {
+		return
+	}
+
+	ctx.UI.Warnf("\nScraper errors:")
+	for _, failure := range visible {
+		ctx.UI.Warnf("  %s: %v", failure.site, failure.err)
+	}
 }
 
 func resolveOutputPath(opts SearchOptions) string {

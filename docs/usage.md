@@ -121,5 +121,6 @@ To validate proxies:
 ## Troubleshooting
 
 - If you see `http 403`, try fewer sites or use proxies.
+- Search errors are summarized on stderr after the search completes; use `--verbose` to include not-implemented scrapers.
 - If output is hard to parse, use `--json` or `--plain`.
 - If color output looks wrong, set `--color=never` or export `NO_COLOR=1`.
