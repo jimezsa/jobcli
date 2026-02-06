@@ -16,12 +16,24 @@ Fast, single-binary job aggregation CLI written in Go. Scrapes multiple sites in
 
 - Go 1.25
 
-## Install
+## Installation
 
 ### Homebrew (macOS/Linux)
 
 ```bash
 brew install jimezsa/tap/jobcli
+```
+
+### Windows
+
+1. Download the latest `.zip` for your architecture from the [Releases](https://github.com/jimezsa/jobcli/releases) page:
+   - `jobcli_<version>_windows_amd64.zip` for 64-bit Intel/AMD
+   - `jobcli_<version>_windows_arm64.zip` for ARM64
+2. Extract the `.zip` file
+3. Move `jobcli.exe` to a directory in your `PATH`, or run it directly:
+
+```powershell
+.\jobcli.exe --help
 ```
 
 ### Build from source
@@ -30,8 +42,7 @@ brew install jimezsa/tap/jobcli
 git clone https://github.com/jimezsa/jobcli
 cd jobcli
 make
-# or:
-# go build -o jobcli ./cmd/jobcli
+./jobcli
 ```
 
 Run:
@@ -46,14 +57,8 @@ jobcli --help
 # show overview and command list
 ./jobcli
 
-# initialize config and proxies
-./jobcli config init
-
-# search all sites
-./jobcli search "golang" --location "New York, NY" --limit 25
-
 # search software engineer roles in Munich, Germany
-./jobcli search "software engineer" --location "Munich, Germany" --country de --limit 25
+./jobcli search "software engineer" --location "Munich, Germany"  --limit 25
 
 # search a single site
 ./jobcli linkedin "platform engineer" --remote
@@ -62,11 +67,7 @@ jobcli --help
 ./jobcli search "software engineer" --sites linkedin --location "Munich, Germany" --country de --limit 10
 ./jobcli search "software engineer" --location "Munich, Germany" --country de --proxies "http://user:pass@host:port,http://host2:port"
 
-# output to CSV
-./jobcli search "sre" --format csv --output results.csv
 
-# JSON output
-./jobcli search "backend" --json
 ```
 
 ## Commands
