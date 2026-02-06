@@ -7,9 +7,9 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/jimezsa/jobcli/internal/models"
 	"github.com/jimezsa/jobcli/internal/network"
-	"github.com/PuerkitoBio/goquery"
 )
 
 const stepstonePageSize = 25

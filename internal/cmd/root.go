@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/jimezsa/jobcli/internal/scraper"
 	"github.com/alecthomas/kong"
+	"github.com/jimezsa/jobcli/internal/scraper"
 )
 
 type CLI struct {

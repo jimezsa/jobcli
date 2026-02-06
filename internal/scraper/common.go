@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jimezsa/jobcli/internal/models"
-	"github.com/jimezsa/jobcli/internal/network"
 	"github.com/PuerkitoBio/goquery"
 	fhttp "github.com/bogdanfinn/fhttp"
+	"github.com/jimezsa/jobcli/internal/models"
+	"github.com/jimezsa/jobcli/internal/network"
 )
 
 func fetchDocument(ctx context.Context, client *network.Client, target string, headers map[string]string) (*goquery.Document, error) {

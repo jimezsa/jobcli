@@ -7,9 +7,9 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/jimezsa/jobcli/internal/models"
 	"github.com/jimezsa/jobcli/internal/network"
-	"github.com/PuerkitoBio/goquery"
 )
 
 type Indeed struct {

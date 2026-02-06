@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jimezsa/jobcli/internal/models"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/jimezsa/jobcli/internal/models"
 )
 
 func TestParsePostedAt(t *testing.T) {

@@ -8,9 +8,9 @@ import (
 	"text/tabwriter"
 	"time"
 
+	fhttp "github.com/bogdanfinn/fhttp"
 	"github.com/jimezsa/jobcli/internal/config"
 	"github.com/jimezsa/jobcli/internal/network"
-	fhttp "github.com/bogdanfinn/fhttp"
 )
 
 type ProxiesCmd struct {
