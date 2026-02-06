@@ -18,6 +18,12 @@ Fast, single-binary job aggregation CLI written in Go. Scrapes multiple sites in
 
 ## Install
 
+### Homebrew (macOS/Linux)
+
+```bash
+brew install jimezsa/tap/jobcli
+```
+
 ### Build from source
 
 ```bash
@@ -31,7 +37,7 @@ make
 Run:
 
 ```bash
-./jobcli --help
+jobcli --help
 ```
 
 ## Quick Start
