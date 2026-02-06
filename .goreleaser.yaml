@@ -50,3 +50,14 @@ archives:
 
 checksum:
   name_template: checksums.txt
+
+brews:
+  - repository:
+      owner: jimezsa
+      name: homebrew-tap
+      token: "{{ .Env.GITHUB_TOKEN }}"
+    homepage: "https://github.com/jimezsa/jobcli"
+    description: "Fast, single-binary job aggregation CLI."
+    license: "MIT"
+    install: |
+      bin.install "jobcli"
