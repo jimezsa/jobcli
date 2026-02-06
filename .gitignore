@@ -47,3 +47,6 @@ jspm_packages/
 /jobcli.exe
 /bin/
 /dist/
+
+# Local tooling (regenerate with: make tools) #
+.tools/
