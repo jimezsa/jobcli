@@ -8,8 +8,8 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/MrJJimenez/jobcli/internal/config"
-	"github.com/MrJJimenez/jobcli/internal/network"
+	"github.com/jimezsa/jobcli/internal/config"
+	"github.com/jimezsa/jobcli/internal/network"
 	fhttp "github.com/bogdanfinn/fhttp"
 )
 

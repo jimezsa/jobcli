@@ -3,7 +3,7 @@ package scraper
 import (
 	"strings"
 
-	"github.com/MrJJimenez/jobcli/internal/network"
+	"github.com/jimezsa/jobcli/internal/network"
 )
 
 const (

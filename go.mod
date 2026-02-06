@@ -1,4 +1,4 @@
-module github.com/MrJJimenez/jobcli
+module github.com/jimezsa/jobcli
 
 go 1.25
 

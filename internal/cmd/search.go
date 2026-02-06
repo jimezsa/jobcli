@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MrJJimenez/jobcli/internal/config"
-	"github.com/MrJJimenez/jobcli/internal/export"
-	"github.com/MrJJimenez/jobcli/internal/models"
-	"github.com/MrJJimenez/jobcli/internal/network"
-	"github.com/MrJJimenez/jobcli/internal/scraper"
+	"github.com/jimezsa/jobcli/internal/config"
+	"github.com/jimezsa/jobcli/internal/export"
+	"github.com/jimezsa/jobcli/internal/models"
+	"github.com/jimezsa/jobcli/internal/network"
+	"github.com/jimezsa/jobcli/internal/scraper"
 	"github.com/muesli/termenv"
 )
 

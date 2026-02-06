@@ -10,8 +10,8 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/MrJJimenez/jobcli/internal/models"
-	"github.com/MrJJimenez/jobcli/internal/ui"
+	"github.com/jimezsa/jobcli/internal/models"
+	"github.com/jimezsa/jobcli/internal/ui"
 	"github.com/muesli/termenv"
 )
 

@@ -3,8 +3,8 @@ package cmd
 import (
 	"io"
 
-	"github.com/MrJJimenez/jobcli/internal/config"
-	"github.com/MrJJimenez/jobcli/internal/ui"
+	"github.com/jimezsa/jobcli/internal/config"
+	"github.com/jimezsa/jobcli/internal/ui"
 	"github.com/rs/zerolog"
 )
 

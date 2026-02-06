@@ -5,9 +5,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/MrJJimenez/jobcli/internal/cmd"
-	"github.com/MrJJimenez/jobcli/internal/config"
-	"github.com/MrJJimenez/jobcli/internal/ui"
+	"github.com/jimezsa/jobcli/internal/cmd"
+	"github.com/jimezsa/jobcli/internal/config"
+	"github.com/jimezsa/jobcli/internal/ui"
 	"github.com/alecthomas/kong"
 	"github.com/rs/zerolog"
 )

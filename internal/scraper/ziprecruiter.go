@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/MrJJimenez/jobcli/internal/models"
-	"github.com/MrJJimenez/jobcli/internal/network"
+	"github.com/jimezsa/jobcli/internal/models"
+	"github.com/jimezsa/jobcli/internal/network"
 	"github.com/PuerkitoBio/goquery"
 )
 

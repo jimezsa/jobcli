@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MrJJimenez/jobcli/internal/models"
+	"github.com/jimezsa/jobcli/internal/models"
 	"github.com/PuerkitoBio/goquery"
 )
 

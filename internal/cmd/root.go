@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/MrJJimenez/jobcli/internal/scraper"
+	"github.com/jimezsa/jobcli/internal/scraper"
 	"github.com/alecthomas/kong"
 )
 

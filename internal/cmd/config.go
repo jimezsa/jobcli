@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/MrJJimenez/jobcli/internal/config"
+	"github.com/jimezsa/jobcli/internal/config"
 )
 
 type ConfigCmd struct {

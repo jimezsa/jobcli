@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MrJJimenez/jobcli/internal/models"
+	"github.com/jimezsa/jobcli/internal/models"
 )
 
 func TestBuildIndeedURL(t *testing.T) {

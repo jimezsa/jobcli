@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/MrJJimenez/jobcli/internal/models"
+	"github.com/jimezsa/jobcli/internal/models"
 )
 
 var ErrNotImplemented = errors.New("scraper not implemented")
