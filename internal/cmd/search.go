@@ -196,21 +196,16 @@ func reportScraperFailures(ctx *Context, failures []scraperFailure) {
 	if ctx == nil || ctx.UI == nil {
 		return
 	}
-
-	visible := failures[:0]
-	for _, failure := range failures {
-		if failure.notImplemented && !ctx.Verbose {
-			continue
-		}
-		visible = append(visible, failure)
+	if !ctx.Verbose {
+		return
 	}
 
-	if len(visible) == 0 {
+	if len(failures) == 0 {
 		return
 	}
 
 	ctx.UI.Warnf("\nScraper errors:")
-	for _, failure := range visible {
+	for _, failure := range failures {
 		ctx.UI.Warnf("  %s: %v", failure.site, failure.err)
 	}
 }
