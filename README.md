@@ -4,6 +4,8 @@
 
 Fast, single-binary job aggregation CLI written in Go. Scrapes multiple sites in parallel and exports results to table, CSV, TSV, JSON, or Markdown.
 
+![JobCLI Demo](docs/assets/jobcli_x5.gif)
+
 ## Features
 
 - Concurrent scraping across LinkedIn, Indeed, Glassdoor, ZipRecruiter, Google Jobs, and Stepstone
