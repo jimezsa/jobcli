@@ -60,10 +60,13 @@ jobcli --help
 jobcli
 
 # search software engineer roles in Munich, Germany
-jobcli search "software engineer" --location "Munich, Germany"  --limit 25
+jobcli search "software engineer" --location "Munich, Germany"  --limit 100
 
 # search a single site
-jobcli linkedin "platform engineer" --remote
+jobcli linkedin "chemical engineer" --location "Munich, Germany"  --limit 100
+
+# search a single site
+jobcli stepstone "hardware engineer" --location "Munich, Germany"  --limit 100
 
 # avoid 403s by narrowing sites or providing proxies
 jobcli search "software engineer" --sites linkedin --location "Munich, Germany" --country de --limit 10
@@ -109,7 +112,6 @@ Search flags:
 - `--sites` (comma-separated list; default `all`)
 - `--limit`
 - `--offset`
-- `--remote`
 - `--job-type=fulltime|parttime|contract|internship`
 - `--hours`
 - `--country`

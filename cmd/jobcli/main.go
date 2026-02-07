@@ -143,8 +143,10 @@ func printOverview() {
 	fmt.Fprintln(os.Stdout)
 
 	fmt.Fprintln(os.Stdout, "Examples:")
-	fmt.Fprintln(os.Stdout, "  jobcli search \"golang\" --location \"New York, NY\" --limit 25")
-	fmt.Fprintln(os.Stdout, "  jobcli google \"data engineer\" --remote --format json")
+	fmt.Fprintln(os.Stdout, "  jobcli search \"chemical engineer\" --location \"Munich, Germany\" --limit 100")
+	fmt.Fprintln(os.Stdout, "  jobcli linkedin \"software engineer\" --location \"Munich, Germany\" --limit 100")
+	fmt.Fprintln(os.Stdout, "  jobcli stepstone \"hardware engineer\" --location \"Munich, Germany\" --limit 100")
+
 }
 
 func buildVersion() string {
