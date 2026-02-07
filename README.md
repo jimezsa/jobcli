@@ -57,17 +57,17 @@ jobcli --help
 
 ```bash
 # show overview and command list
-./jobcli
+jobcli
 
 # search software engineer roles in Munich, Germany
-./jobcli search "software engineer" --location "Munich, Germany"  --limit 25
+jobcli search "software engineer" --location "Munich, Germany"  --limit 25
 
 # search a single site
-./jobcli linkedin "platform engineer" --remote
+jobcli linkedin "platform engineer" --remote
 
 # avoid 403s by narrowing sites or providing proxies
-./jobcli search "software engineer" --sites linkedin --location "Munich, Germany" --country de --limit 10
-./jobcli search "software engineer" --location "Munich, Germany" --country de --proxies "http://user:pass@host:port,http://host2:port"
+jobcli search "software engineer" --sites linkedin --location "Munich, Germany" --country de --limit 10
+jobcli search "software engineer" --location "Munich, Germany" --country de --proxies "http://user:pass@host:port,http://host2:port"
 
 
 ```
@@ -145,7 +145,7 @@ Environment variables:
 ## Proxy Checking
 
 ```bash
-./jobcli proxies check --target "https://www.google.com" --timeout 15
+jobcli proxies check --target "https://www.google.com" --timeout 15
 ```
 
 ## Notes
