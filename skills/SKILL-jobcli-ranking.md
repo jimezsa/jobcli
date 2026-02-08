@@ -37,7 +37,6 @@ Daily (or on-demand) skill that reads the persona summary and keywords from
 ranks every listing against the persona, and presents a scored table.
 
 > **Prerequisite:** `CVSUMMARY.md` must exist in the working directory.
-> Generate it first with **SKILL-cv-summmary.md** (provide a PDF CV).
 
 > **Trigger:** the user asks to search for jobs, or it is time for a daily
 > search run.
