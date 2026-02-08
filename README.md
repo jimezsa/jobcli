@@ -62,8 +62,8 @@ jobcli
 # search software engineer roles in Munich, Germany
 jobcli search "software engineer" --location "Munich, Germany"  --limit 100
 
-# search a single site
-jobcli linkedin "chemical engineer" --location "Munich, Germany"  --limit 100
+# search a single site last 48 hours
+jobcli linkedin "chemical engineer" --location "Munich, Germany"  --limit 10 --hours 48
 
 # search a single site
 jobcli stepstone "hardware engineer" --location "Munich, Germany"  --limit 100
