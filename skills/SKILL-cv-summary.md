@@ -52,15 +52,15 @@ Produce a **concise professional summary** (max 120 words) that captures:
 
 ## 3 — Generate Search Keywords
 
-Produce **exactly 10 keyword phrases** that will be used as `jobcli search`
+Produce **exactly 20 keyword phrases** that will be used as `jobcli search`
 queries. Each keyword phrase should represent a **realistic job title** that
 matches the persona's skills and experience level.
 
 Generate them in two groups:
 
-1. **English keywords** (5 phrases) — use standard English job-market titles
+1. **English keywords** (10 phrases) — use standard English job-market titles
    (e.g., "Senior Backend Engineer", "DevOps Team Lead").
-2. **Original-language keywords** (5 phrases) — translate or adapt the same
+2. **Original-language keywords** (10 phrases) — translate or adapt the same
    intent into the persona's primary working language if it is not English.
    If the persona's language **is** English, generate 5 alternative/synonym
    English titles instead (e.g., "Software Developer" vs "Software Engineer").
@@ -91,6 +91,11 @@ directory with the following structure:
 3. <keyword 3>
 4. <keyword 4>
 5. <keyword 5>
+6. <keyword 6>
+7. <keyword 7>
+8. <keyword 8>
+9. <keyword 9>
+10. <keyword 10>
 
 ### Original Language (<language name>)
 
@@ -99,10 +104,16 @@ directory with the following structure:
 3. <keyword 3>
 4. <keyword 4>
 5. <keyword 5>
+6. <keyword 6>
+7. <keyword 7>
+8. <keyword 8>
+9. <keyword 9>
+10. <keyword 10>
 
 ## Ranking Criteria
 
 Use the persona summary above to score each job from 0.0 to 1.0 based on:
+
 - Title match (does the job title align with the persona's level and domain?)
 - Skill overlap (how many of the persona's core skills appear in the description?)
 - Domain fit (is the industry/sector relevant?)

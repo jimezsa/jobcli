@@ -150,6 +150,13 @@ Environment variables:
 jobcli proxies check --target "https://www.google.com" --timeout 15
 ```
 
+## AI Agent Skills
+
+The `skills/` directory contains ready-made skill files that let AI coding agents (OpenClaw, Cursor, Codex, etc.) use JobCLI on your behalf:
+
+- **SKILL-cv-summary.md** — reads a PDF CV, extracts an anonymous persona summary and 10 search keywords, and saves them to `CVSUMMARY.md`. Run once or whenever you update your CV.
+- **SKILL-jobcli-ranking.md** — reads `CVSUMMARY.md`, runs jobcli searches for each keyword, deduplicates results, ranks every listing 0–1 against your persona, and presents a scored table. Designed for daily use.
+
 ## Notes
 
 - Scrapers are best-effort and may require selector updates as sites change.
