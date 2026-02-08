@@ -143,7 +143,7 @@ func printOverview() {
 	fmt.Fprintln(os.Stdout)
 
 	fmt.Fprintln(os.Stdout, "Examples:")
-	fmt.Fprintln(os.Stdout, "  jobcli search \"chemical engineer\" --location \"Munich, Germany\" --limit 100")
+	fmt.Fprintln(os.Stdout, "  jobcli search \"chemical engineer\" --location \"Munich, Germany\" --limit 10 --hours 48")
 	fmt.Fprintln(os.Stdout, "  jobcli linkedin \"software engineer\" --location \"Munich, Germany\" --limit 100")
 	fmt.Fprintln(os.Stdout, "  jobcli stepstone \"hardware engineer\" --location \"Munich, Germany\" --limit 100")
 }

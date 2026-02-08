@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1] - 2026-02-07
+
+### Changed
+
+- Improved CLI help text and command descriptions for clarity
+- Added SKILL.md and SKILL-jobsearch.md for AI-assisted job search workflows
+- Added AGENTS.md project structure guide for LLM and contributor onboarding
+
 ## [0.1.0] - 2026-02-06
 
 Initial public release of `jobcli` Fast, single-binary job aggregation CLI written in Go. Scrapes multiple sites in parallel and exports results to table, CSV, TSV, JSON, or Markdown.
