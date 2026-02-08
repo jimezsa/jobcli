@@ -34,7 +34,7 @@ metadata:
 
 Daily (or on-demand) skill that reads the persona summary and keywords from
 `CVSUMMARY.md`, runs targeted job searches with `jobcli`, deduplicates results,
-ranks every listing against the persona, and presents a scored table.
+ranks every listing against the persona, and presents a scored ranked list.
 
 > **Prerequisite:** `CVSUMMARY.md` must exist in the working directory.
 
@@ -159,15 +159,40 @@ Final score = average of the five dimensions.
 
 ## 6 — Present Results
 
-Display the final ranked list as a **Markdown table** sorted by score
-(descending):
+Display the final ranked list sorted by score (descending). Send **each job as
+a separate message**.
 
-| Score | Title | Company | Site | URL | Matched Keywords |
-| ----- | ----- | ------- | ---- | --- | ---------------- |
+Use this exact per-job format by rank position:
 
+- Rank 1:
+
+```text
+🥇 job_title_here
+📍 Location
+🏢 Company_name
+⭐ Score: score_number
+
+full_url_link_here
+```
+
+- Rank 2 uses `🥈` and rank 3 uses `🥉` in place of `🥇`.
+- From rank 4 onward, replace medal icons with only the numeric position:
+
+```text
+4. job_title_here
+📍 Location
+🏢 Company_name
+⭐ Score: score_number
+
+full_url_link_here
+```
+
+- Include the **full URL** on its own line (not shortened links).
 - Show only jobs with score >= **0.7** by default.
 - If the user asks, show all results or apply a custom threshold.
-- Offer to save the ranked table to a file (e.g., `ranked_jobs.md`).
+- Offer to save the ranked results to a file (e.g., `ranked_jobs.md`).
+- After sending all ranked jobs, send one short funny motivational message
+  encouraging the user to keep going with job hunting.
 
 ---
 
@@ -183,7 +208,7 @@ to keep the working directory clean. Keep `CVSUMMARY.md` and the final
 
 - **Privacy first:** never expose personal data from `CVSUMMARY.md` in search
   queries, logs, or output files.
-- **Rate limits:** if many keywords fail with 403/429, sggest to use `--limit 10`
+- **Rate limits:** if many keywords fail with 403/429, suggest using `--limit 10`
 - **Iterative refinement:** the user may ask to adjust keywords or re-rank
   with different criteria — re-read `CVSUMMARY.md` and repeat from Step 3.
 - **Daily runs:** on repeat runs, consider using `--hours 48` to fetch only
