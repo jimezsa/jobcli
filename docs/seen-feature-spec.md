@@ -104,8 +104,10 @@ Flow inside `runSearch`:
 1. Scrape and aggregate jobs (`A`).
 2. If `--seen` is provided, load `B` and compute `C = A - B`.
 3. Export:
-  - `--new-only=true`: output `C`
-  - otherwise: output current behavior (`A`)
+
+- `--new-only=true`: output `C`
+- otherwise: output current behavior (`A`)
+
 4. If `--new-out` is set, write `C` to JSON file regardless of display/output mode.
 
 Examples:
