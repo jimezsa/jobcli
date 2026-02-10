@@ -22,6 +22,7 @@ type CLI struct {
 	ZipRecruiter SiteCmd    `cmd:"" name:"ziprecruiter" help:"Search ZipRecruiter."`
 	Google       SiteCmd    `cmd:"" name:"google" help:"Search Google Jobs."`
 	Stepstone    SiteCmd    `cmd:"" name:"stepstone" help:"Search Stepstone."`
+	Seen         SeenCmd    `cmd:"" help:"Seen jobs utilities."`
 	Proxies      ProxiesCmd `cmd:"" help:"Proxy utilities."`
 }
 

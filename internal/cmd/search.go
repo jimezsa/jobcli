@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -16,6 +17,7 @@ import (
 	"github.com/jimezsa/jobcli/internal/models"
 	"github.com/jimezsa/jobcli/internal/network"
 	"github.com/jimezsa/jobcli/internal/scraper"
+	"github.com/jimezsa/jobcli/internal/seen"
 	"github.com/muesli/termenv"
 )
 
@@ -45,6 +47,9 @@ type SearchOptions struct {
 	Out      string `name:"out" help:"Alias for --output."`
 	File     string `name:"file" help:"Alias for --output."`
 	Proxies  string `help:"Comma-separated proxy URLs." env:"JOBCLI_PROXIES"`
+	Seen     string `help:"Path to seen jobs JSON file."`
+	NewOnly  bool   `help:"Output only unseen jobs (requires --seen)."`
+	NewOut   string `help:"Write unseen jobs JSON to a file (requires --seen)."`
 }
 
 func (s *SearchCmd) Run(ctx *Context) error {
@@ -56,6 +61,13 @@ func (s *SiteCmd) Run(ctx *Context) error {
 }
 
 func runSearch(ctx *Context, query string, sitesArg string, opts SearchOptions) error {
+	if opts.NewOnly && strings.TrimSpace(opts.Seen) == "" {
+		return fmt.Errorf("--new-only requires --seen")
+	}
+	if strings.TrimSpace(opts.NewOut) != "" && strings.TrimSpace(opts.Seen) == "" {
+		return fmt.Errorf("--new-out requires --seen")
+	}
+
 	cfg := ctx.Config
 	params := models.SearchParams{
 		Query:    query,
@@ -105,7 +117,31 @@ func runSearch(ctx *Context, query string, sitesArg string, opts SearchOptions) 
 		jobs = jobs[:params.Limit]
 	}
 
+	var unseenJobs []models.Job
+	if strings.TrimSpace(opts.Seen) != "" {
+		seenJobs, err := seen.ReadJobsAllowMissing(opts.Seen)
+		if err != nil {
+			return fmt.Errorf("read --seen: %w", err)
+		}
+		unseenJobs, _ = seen.Diff(jobs, seenJobs)
+	}
+
+	outputJobs := jobs
+	if opts.NewOnly {
+		outputJobs = unseenJobs
+	}
+
 	outputPath := resolveOutputPath(opts)
+	if strings.TrimSpace(opts.NewOut) != "" && pathsEqual(outputPath, opts.NewOut) {
+		return fmt.Errorf("--new-out path must differ from --output")
+	}
+
+	if strings.TrimSpace(opts.NewOut) != "" {
+		if err := seen.WriteJobs(opts.NewOut, unseenJobs); err != nil {
+			return fmt.Errorf("write --new-out: %w", err)
+		}
+	}
+
 	format, err := resolveFormat(ctx, opts, outputPath)
 	if err != nil {
 		return err
@@ -128,11 +164,23 @@ func runSearch(ctx *Context, query string, sitesArg string, opts SearchOptions) 
 	if strings.EqualFold(opts.Links, string(export.LinkStyleFull)) {
 		linkStyle = export.LinkStyleFull
 	}
-	return export.WriteJobs(writer, jobs, format, export.WriteOptions{
+	return export.WriteJobs(writer, outputJobs, format, export.WriteOptions{
 		ColorEnabled: colorEnabled,
 		Hyperlinks:   hyperlinks,
 		LinkStyle:    linkStyle,
 	})
+}
+
+func pathsEqual(a, b string) bool {
+	if strings.TrimSpace(a) == "" || strings.TrimSpace(b) == "" {
+		return false
+	}
+	absA, errA := filepath.Abs(a)
+	absB, errB := filepath.Abs(b)
+	if errA == nil && errB == nil {
+		return absA == absB
+	}
+	return filepath.Clean(a) == filepath.Clean(b)
 }
 
 func runScrapers(scrapers []scraper.Scraper, params models.SearchParams) ([]models.Job, []scraperFailure, error) {
@@ -222,6 +270,12 @@ func resolveOutputPath(opts SearchOptions) string {
 
 func resolveFormat(ctx *Context, opts SearchOptions, outputPath string) (export.Format, error) {
 	if outputPath != "" {
+		if ctx.JSONOutput {
+			return export.FormatJSON, nil
+		}
+		if ctx.PlainText {
+			return export.FormatTSV, nil
+		}
 		if opts.Format == "" {
 			return export.FormatCSV, nil
 		}

@@ -114,24 +114,29 @@ Flag aliases:
 - `jobcli version`
 - `jobcli config init` (writes default `config.json` and empty `proxies.txt`)
 - `jobcli config path`
-
-### Planned
-
 - `jobcli search <query> [--location L] [--sites S] [--limit N] [--offset N]`
-  - **The core command.**
-  - `--sites`: Comma-separated list (e.g., `linkedin,indeed`). Default: `all`.
-  - `--remote`: Filter for remote-only jobs.
-  - `--job-type`: Filter by `fulltime`, `parttime`, `contract`, `internship`.
-  - `--hours`: Filter jobs posted in the last N hours.
-  - `--country`: Subdomain for Indeed/Glassdoor (e.g., `uk`, `ca`).
-  - `--format`: `csv|json|md` (defaults to `csv` or table depending on TTY).
-  - `--links`: `short|full` (table URL display; default `full`, `short` only applies when terminal hyperlinks are supported).
 - `jobcli linkedin <query> ...`
-  - Direct access to LinkedIn scraper with site-specific flags (if any).
 - `jobcli indeed <query> ...`
-  - Direct access to Indeed scraper.
+- `jobcli glassdoor <query> ...`
+- `jobcli ziprecruiter <query> ...`
+- `jobcli google <query> ...`
+- `jobcli stepstone <query> ...`
+- `jobcli seen diff --new A.json --seen B.json --out C.json [--stats]`
+- `jobcli seen update --seen B.json --input C.json --out B.json [--stats]`
 - `jobcli proxies check`
-  - Validates the current proxy list against a target URL (e.g., `google.com`) and reports latency/success rate.
+
+Search/site flags include:
+
+- `--sites`: comma-separated list (search only), default `all`
+- `--remote`: filter remote-only jobs
+- `--job-type`: `fulltime|parttime|contract|internship`
+- `--hours`: jobs posted in the last N hours
+- `--country`: subdomain/locale for site-specific scrapers
+- `--format`: `csv|json|md`
+- `--links`: `short|full` (table URL display)
+- `--seen`: seen-history JSON path
+- `--new-only`: output only unseen jobs (`A - B`) (requires `--seen`)
+- `--new-out`: always write unseen JSON to file (requires `--seen`)
 
 ## Output formats
 
@@ -154,7 +159,8 @@ Default: Human-friendly tables (stdlib `text/tabwriter`) printed to `stdout` (co
   - `linkedin.go`
   - `indeed.go`
   - `glassdoor.go`
-- `internal/models/*` — Shared data structs (`Job`, `ScraperConfig`)
+- `internal/models/*` — Shared data structs (`Job`, `SearchParams`)
+- `internal/seen/*` — Seen-job key normalization, diff/merge, and JSON IO
 - `internal/export/*` — Writers for CSV and JSON
 
 ## Dependencies (Planned)

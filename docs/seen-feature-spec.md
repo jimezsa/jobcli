@@ -113,12 +113,12 @@ Flow inside `runSearch`:
 Examples:
 
 ```bash
-jobcli search "golang" --location "Austin, TX" --limit 30 \
+jobcli search "hardware engineer" --location "Munich, Germany" --limit 30 \
   --seen jobs_seen.json --new-only --json --output jobs_new.json
 ```
 
 ```bash
-jobcli linkedin "golang" --seen jobs_seen.json --new-only --json
+jobcli linkedin "hardware engineer" --seen jobs_seen.json --new-only --json
 ```
 
 ## Implementation Plan

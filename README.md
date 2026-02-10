@@ -11,6 +11,7 @@ Fast, single-binary job aggregation CLI written in Go. Scrapes multiple sites in
 - Concurrent scraping across LinkedIn, Indeed, Glassdoor, ZipRecruiter, Google Jobs, and Stepstone
 - TLS fingerprinting via `tls-client` to reduce blocking
 - Proxy rotation with temporary bans on 403/429 responses
+- Seen-jobs workflow with JSON diff/update commands to avoid reprocessing old listings
 - Human-friendly tables or machine-friendly exports
 - Config + proxies stored in the user config directory
 
@@ -68,6 +69,13 @@ jobcli linkedin "chemical engineer" --location "Munich, Germany"  --limit 10 --h
 # search a single site
 jobcli stepstone "hardware engineer" --location "Munich, Germany"  --limit 100
 
+# output only unseen jobs using a seen-history JSON
+jobcli search "software engineer" --location "Munich, Germany" --limit 30 \
+  --seen jobs_seen.json --new-only --json --output jobs_new.json
+
+# update seen-history after reviewing/ranking new jobs
+jobcli seen update --seen jobs_seen.json --input jobs_new.json --out jobs_seen.json --stats
+
 # avoid 403s by narrowing sites or providing proxies
 jobcli search "software engineer" --sites linkedin --location "Munich, Germany" --country de --limit 10
 jobcli search "software engineer" --location "Munich, Germany" --country de --proxies "http://user:pass@host:port,http://host2:port"
@@ -87,6 +95,8 @@ jobcli search "software engineer" --location "Munich, Germany" --country de --pr
 - `jobcli ziprecruiter <query> ...`
 - `jobcli google <query> ...`
 - `jobcli stepstone <query> ...`
+- `jobcli seen diff --new A.json --seen B.json --out C.json`
+- `jobcli seen update --seen B.json --input C.json --out B.json`
 - `jobcli proxies check`
 
 ## Output Formats
@@ -119,6 +129,24 @@ Search flags:
 - `--links=short|full`
 - `--output` (aliases: `--out`, `--file`)
 - `--proxies` (comma-separated URLs)
+- `--seen` (path to seen jobs JSON history)
+- `--new-only` (output only unseen jobs; requires `--seen`)
+- `--new-out` (write unseen jobs JSON file; requires `--seen`)
+
+## Seen Jobs Workflow
+
+Use this when you want only fresh jobs in recurring runs.
+
+```bash
+# 1) scrape and keep only unseen jobs (C = A - B)
+jobcli search "hardware engineer" --location "Munich, Germany" --limit 30 \
+  --seen jobs_seen.json --new-only --json --output jobs_new.json
+
+# 2) (optional) rank/review jobs_new.json with your own tooling
+
+# 3) persist accepted/new jobs back into seen history
+jobcli seen update --seen jobs_seen.json --input jobs_new.json --out jobs_seen.json --stats
+```
 
 ## Config
 

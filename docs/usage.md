@@ -30,6 +30,12 @@ make
 
 # JSON output
 ./jobcli search "backend" --json
+
+# output only unseen jobs (A-B)
+./jobcli search "backend" --json --seen jobs_seen.json --new-only --output jobs_new.json
+
+# update seen history with reviewed/ranked jobs
+./jobcli seen update --seen jobs_seen.json --input jobs_new.json --out jobs_seen.json --stats
 ```
 
 ## Commands
@@ -44,6 +50,8 @@ make
 - `jobcli ziprecruiter <query> ...`
 - `jobcli google <query> ...`
 - `jobcli stepstone <query> ...`
+- `jobcli seen diff --new A.json --seen B.json --out C.json`
+- `jobcli seen update --seen B.json --input C.json --out B.json`
 - `jobcli proxies check`
 
 ## Global flags
@@ -68,6 +76,19 @@ make
 - `--links=short|full`
 - `--output` (aliases: `--out`, `--file`)
 - `--proxies` (comma-separated URLs)
+- `--seen` (path to seen jobs JSON history)
+- `--new-only` (output only unseen jobs; requires `--seen`)
+- `--new-out` (write unseen jobs JSON file; requires `--seen`)
+
+## Seen workflow
+
+```bash
+# Diff new results against history (C = A - B)
+./jobcli seen diff --new jobs_a.json --seen jobs_seen.json --out jobs_c.json --stats
+
+# Merge reviewed/ranked jobs into seen history
+./jobcli seen update --seen jobs_seen.json --input jobs_c_ranked.json --out jobs_seen.json --stats
+```
 
 ## Output formats
 

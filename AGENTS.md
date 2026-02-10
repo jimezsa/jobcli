@@ -11,6 +11,7 @@ This document gives an LLM (or any contributor) a quick map of how the project i
 - `internal/network/` — TLS client wrapper + proxy rotator.
 - `internal/scraper/` — scraper interface and site implementations.
 - `internal/models/` — shared data types (`Job`, `SearchParams`, etc.).
+- `internal/seen/` — seen-jobs comparison, merge logic, and JSON IO helpers.
 - `internal/export/` — output writers (table, CSV/TSV, JSON, Markdown).
 - `docs/` — specs and usage documentation.
 
@@ -29,6 +30,7 @@ CLI:
 - `cmd/jobcli/main.go`
 - `internal/cmd/root.go`
 - `internal/cmd/search.go`
+- `internal/cmd/seen.go`
 - `internal/cmd/config.go`
 - `internal/cmd/proxies.go`
 
@@ -60,6 +62,11 @@ Models:
 
 - `internal/models/job.go`
 - `internal/models/search.go`
+
+Seen Jobs:
+
+- `internal/seen/compare.go`
+- `internal/seen/io.go`
 
 ## Adding a New Scraper
 

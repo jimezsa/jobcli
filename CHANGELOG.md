@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.1.2] - 2026-02-10
+
+### Added
+
+- Added `jobcli seen diff` to compute unseen jobs (`A - B`) from JSON arrays using normalized `title + company`
+- Added `jobcli seen update` to merge newly accepted jobs into seen history without duplicates
+- Added `internal/seen` package with reusable compare/merge logic and JSON IO helpers
+- Added search/site flags: `--seen`, `--new-only`, and `--new-out` for one-step unseen filtering workflows
+- Added unit tests for seen normalization, diff/merge behavior, idempotency, and file IO
+
+### Changed
+
+- Updated top-level docs (`README.md`, `AGENTS.md`) for the new seen-jobs command group and workflow
+
+### Fixed
+
+- Fixed `search`/site file output format resolution so `--out` now respects `--json` and `--plain` (instead of always defaulting to CSV)
+- Added regression test coverage for `resolveFormat` with file output paths
+
 ## [0.1.1] - 2026-02-07
 
 ### Changed
