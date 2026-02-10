@@ -132,6 +132,7 @@ Search flags:
 - `--seen` (path to seen jobs JSON history)
 - `--new-only` (output only unseen jobs; requires `--seen`)
 - `--new-out` (also write unseen jobs (`A - B`) to a JSON file; requires `--seen`)
+- `--seen-update` (update `--seen` by merging in newly discovered unseen jobs after the search completes; requires `--seen`)
 
 Seen flags:
 
@@ -145,6 +146,11 @@ Use this when you want only fresh jobs in recurring runs.
 # 1) scrape and keep only unseen jobs (C = A - B)
 jobcli search "hardware engineer" --location "Munich, Germany" --limit 30 \
   --seen jobs_seen.json --new-only --json --output jobs_new.json
+
+# If you want to auto-mark new jobs as "seen" in the same run (no separate
+# `jobcli seen update` step), add --seen-update:
+# jobcli search "hardware engineer" --location "Munich, Germany" --limit 30 \
+#   --seen jobs_seen.json --new-only --seen-update --json --output jobs_new.json
 
 # If you want to keep the primary output as "all jobs" (table/CSV/etc) but still
 # write unseen jobs to JSON, use --new-out (no --new-only needed):

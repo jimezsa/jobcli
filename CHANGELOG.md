@@ -8,11 +8,13 @@
 - Added `jobcli seen update` to merge newly accepted jobs into seen history without duplicates
 - Added `internal/seen` package with reusable compare/merge logic and JSON IO helpers
 - Added search/site flags: `--seen`, `--new-only`, and `--new-out` for one-step unseen filtering workflows
+- Added `--seen-update` to `search` and site commands to automatically merge newly discovered unseen jobs into the `--seen` history JSON after a successful run
 - Added unit tests for seen normalization, diff/merge behavior, idempotency, and file IO
 
 ### Changed
 
 - Updated top-level docs (`README.md`, `AGENTS.md`) for the new seen-jobs command group and workflow
+- Clarified `--new-out` vs `--output` behavior in docs (`README.md`, `docs/usage.md`)
 
 ### Fixed
 

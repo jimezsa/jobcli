@@ -36,6 +36,9 @@ make
 
 # update seen history with reviewed/ranked jobs
 ./jobcli seen update --seen jobs_seen.json --input jobs_new.json --out jobs_seen.json --stats
+
+# or: auto-update the seen history directly during search
+./jobcli search "backend" --json --seen jobs_seen.json --new-only --seen-update --output jobs_new.json
 ```
 
 ## Commands
@@ -79,11 +82,13 @@ make
 - `--seen` (path to seen jobs JSON history)
 - `--new-only` (output only unseen jobs; requires `--seen`)
 - `--new-out` (also write unseen jobs (`A - B`) to a JSON file; requires `--seen`)
+- `--seen-update` (update `--seen` by merging in newly discovered unseen jobs after the search completes; requires `--seen`)
 
 Notes:
 
 - If you use `--new-only --json --output jobs_new.json`, you usually don’t need `--new-out`.
 - Use `--new-out` when you want to keep the primary output as "all jobs" (table/CSV/etc) but still persist unseen jobs for `jobcli seen update`.
+- Use `--seen-update` if you want to mark newly discovered unseen jobs as "seen" immediately (no separate `jobcli seen update` step).
 
 ## Seen workflow
 

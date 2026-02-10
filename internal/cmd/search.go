@@ -34,22 +34,23 @@ type SiteCmd struct {
 }
 
 type SearchOptions struct {
-	Location string `help:"Job location." env:"JOBCLI_DEFAULT_LOCATION"`
-	Country  string `help:"Country code (Indeed/Glassdoor)." env:"JOBCLI_DEFAULT_COUNTRY"`
-	Limit    int    `help:"Maximum results." env:"JOBCLI_DEFAULT_LIMIT"`
-	Offset   int    `help:"Offset for pagination."`
-	Remote   bool   `help:"Remote-only roles."`
-	JobType  string `help:"Job type filter (fulltime, parttime, contract, internship)." enum:",fulltime,parttime,contract,internship" default:""`
-	Hours    int    `help:"Jobs posted in the last N hours."`
-	Format   string `help:"Output format: csv, json, md." enum:",csv,json,md" default:""`
-	Links    string `help:"Table link display: short or full." enum:"short,full" default:"full"`
-	Output   string `name:"output" short:"o" help:"Write output to a file."`
-	Out      string `name:"out" help:"Alias for --output."`
-	File     string `name:"file" help:"Alias for --output."`
-	Proxies  string `help:"Comma-separated proxy URLs." env:"JOBCLI_PROXIES"`
-	Seen     string `help:"Path to seen jobs JSON file."`
-	NewOnly  bool   `help:"Output only unseen jobs (requires --seen)."`
-	NewOut   string `help:"Write unseen jobs JSON to a file (requires --seen)."`
+	Location   string `help:"Job location." env:"JOBCLI_DEFAULT_LOCATION"`
+	Country    string `help:"Country code (Indeed/Glassdoor)." env:"JOBCLI_DEFAULT_COUNTRY"`
+	Limit      int    `help:"Maximum results." env:"JOBCLI_DEFAULT_LIMIT"`
+	Offset     int    `help:"Offset for pagination."`
+	Remote     bool   `help:"Remote-only roles."`
+	JobType    string `help:"Job type filter (fulltime, parttime, contract, internship)." enum:",fulltime,parttime,contract,internship" default:""`
+	Hours      int    `help:"Jobs posted in the last N hours."`
+	Format     string `help:"Output format: csv, json, md." enum:",csv,json,md" default:""`
+	Links      string `help:"Table link display: short or full." enum:"short,full" default:"full"`
+	Output     string `name:"output" short:"o" help:"Write output to a file."`
+	Out        string `name:"out" help:"Alias for --output."`
+	File       string `name:"file" help:"Alias for --output."`
+	Proxies    string `help:"Comma-separated proxy URLs." env:"JOBCLI_PROXIES"`
+	Seen       string `help:"Path to seen jobs JSON file."`
+	NewOnly    bool   `help:"Output only unseen jobs (requires --seen)."`
+	NewOut     string `help:"Write unseen jobs JSON to a file (requires --seen)."`
+	SeenUpdate bool   `help:"Update --seen history file by merging in newly discovered unseen jobs after search completes (requires --seen)."`
 }
 
 func (s *SearchCmd) Run(ctx *Context) error {
@@ -66,6 +67,9 @@ func runSearch(ctx *Context, query string, sitesArg string, opts SearchOptions) 
 	}
 	if strings.TrimSpace(opts.NewOut) != "" && strings.TrimSpace(opts.Seen) == "" {
 		return fmt.Errorf("--new-out requires --seen")
+	}
+	if opts.SeenUpdate && strings.TrimSpace(opts.Seen) == "" {
+		return fmt.Errorf("--seen-update requires --seen")
 	}
 
 	cfg := ctx.Config
@@ -135,6 +139,12 @@ func runSearch(ctx *Context, query string, sitesArg string, opts SearchOptions) 
 	if strings.TrimSpace(opts.NewOut) != "" && pathsEqual(outputPath, opts.NewOut) {
 		return fmt.Errorf("--new-out path must differ from --output")
 	}
+	if strings.TrimSpace(opts.Seen) != "" && pathsEqual(outputPath, opts.Seen) {
+		return fmt.Errorf("--output path must differ from --seen")
+	}
+	if strings.TrimSpace(opts.NewOut) != "" && pathsEqual(opts.NewOut, opts.Seen) {
+		return fmt.Errorf("--new-out path must differ from --seen")
+	}
 
 	if strings.TrimSpace(opts.NewOut) != "" {
 		if err := seen.WriteJobs(opts.NewOut, unseenJobs); err != nil {
@@ -164,11 +174,21 @@ func runSearch(ctx *Context, query string, sitesArg string, opts SearchOptions) 
 	if strings.EqualFold(opts.Links, string(export.LinkStyleFull)) {
 		linkStyle = export.LinkStyleFull
 	}
-	return export.WriteJobs(writer, outputJobs, format, export.WriteOptions{
+	if err := export.WriteJobs(writer, outputJobs, format, export.WriteOptions{
 		ColorEnabled: colorEnabled,
 		Hyperlinks:   hyperlinks,
 		LinkStyle:    linkStyle,
-	})
+	}); err != nil {
+		return err
+	}
+
+	if opts.SeenUpdate && strings.TrimSpace(opts.Seen) != "" {
+		if err := updateSeenHistory(opts.Seen, unseenJobs); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func pathsEqual(a, b string) bool {
@@ -181,6 +201,20 @@ func pathsEqual(a, b string) bool {
 		return absA == absB
 	}
 	return filepath.Clean(a) == filepath.Clean(b)
+}
+
+func updateSeenHistory(seenPath string, inputJobs []models.Job) error {
+	seenJobs, err := seen.ReadJobsAllowMissing(seenPath)
+	if err != nil {
+		return fmt.Errorf("read --seen: %w", err)
+	}
+
+	mergedJobs, _ := seen.Merge(seenJobs, inputJobs)
+	if err := seen.WriteJobs(seenPath, mergedJobs); err != nil {
+		return fmt.Errorf("write --seen: %w", err)
+	}
+
+	return nil
 }
 
 func runScrapers(scrapers []scraper.Scraper, params models.SearchParams) ([]models.Job, []scraperFailure, error) {
