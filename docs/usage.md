@@ -74,11 +74,16 @@ make
 - `--country`
 - `--format=csv|json|md`
 - `--links=short|full`
-- `--output` (aliases: `--out`, `--file`)
+- `--output` (aliases: `--out`, `--file`) (write the primary output to a file)
 - `--proxies` (comma-separated URLs)
 - `--seen` (path to seen jobs JSON history)
 - `--new-only` (output only unseen jobs; requires `--seen`)
-- `--new-out` (write unseen jobs JSON file; requires `--seen`)
+- `--new-out` (also write unseen jobs (`A - B`) to a JSON file; requires `--seen`)
+
+Notes:
+
+- If you use `--new-only --json --output jobs_new.json`, you usually don’t need `--new-out`.
+- Use `--new-out` when you want to keep the primary output as "all jobs" (table/CSV/etc) but still persist unseen jobs for `jobcli seen update`.
 
 ## Seen workflow
 
