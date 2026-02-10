@@ -35,6 +35,9 @@ metadata:
 Daily/on-demand flow: read `CVSUMMARY.md`, search jobs with `jobcli`, dedupe,
 score against persona, and return ranked results.
 
+This skill only ranks *new/unseen* jobs, and updates the seen-history JSON
+after searching so future runs don’t re-rank the same listings.
+
 > Prerequisite: `CVSUMMARY.md` exists in cwd.
 > Trigger: user asks for job search/ranking.
 
@@ -58,12 +61,16 @@ jobcli config init
 
 Ask for `location` and `country` if unknown.
 
-## 3) Search per keyword (sequential)
+Decide on a seen-history path (default: `jobs_seen.json` in cwd).
+
+## 3) Search per keyword (sequential, new-only)
 
 For each keyword:
 
 ```bash
-jobcli search "<keyword>" --location "<location>" --country "<code>" --limit 30 --json --output jobs_keyword_<n>.json
+jobcli search "<keyword>" --location "<location>" --country "<code>" --limit 30 \
+  --seen jobs_seen.json --new-only \
+  --json --output jobs_new_keyword_<n>.json
 ```
 
 Rules:
@@ -72,12 +79,30 @@ Rules:
 - if 403/429 or empty, retry once with `--sites linkedin,google`
 - if still failing, skip and note failure
 
-## 4) Aggregate + dedupe
+## 4) Aggregate + dedupe (new jobs only)
 
-Merge `jobs_keyword_*.json`, dedupe by full URL, keep matched keyword list per
-job.
+Merge `jobs_new_keyword_*.json` into `jobs_new_all.json`, dedupe by full URL,
+keep matched keyword list per job.
 
-## 5) Score each job (0.0–1.0)
+If `jobs_new_all.json` is empty, report “no new jobs found” and stop (do not
+rank).
+
+## 5) Update seen history (after search)
+
+After aggregating/deduping, update the seen-history JSON so the new jobs won’t
+show up again on the next run:
+
+```bash
+jobcli seen update --seen jobs_seen.json --input jobs_new_all.json --out jobs_seen.json --stats
+```
+
+Notes:
+
+- `--seen` missing file is treated as empty; `--out` writes/updates it.
+- This marks all discovered new jobs as “seen” regardless of whether the user
+  applies to them.
+
+## 6) Score each job (0.0–1.0)
 
 Use equal-weight dimensions (0.2 each):
 
@@ -89,7 +114,7 @@ Use equal-weight dimensions (0.2 each):
 
 Final score = average of 5 dimensions.
 
-## 6) Present ranked output
+## 7) Present ranked output
 
 Sort descending by score.
 
@@ -112,10 +137,10 @@ Use `🥈` for rank 2, `🥉` for rank 3, and `N.` for rank 4+.
 Offer saving to `ranked_jobs.md`.
 After results, send one short funny motivational line.
 
-## 7) Cleanup
+## 8) Cleanup
 
-Delete `jobs_keyword_*.json`. Keep `CVSUMMARY.md` and `ranked_jobs.md` (if
-created).
+Delete `jobs_new_keyword_*.json`. Keep `jobs_new_all.json`, `CVSUMMARY.md`, and
+`ranked_jobs.md` (if created).
 
 ## Notes
 
