@@ -95,8 +95,8 @@ jobcli search "software engineer" --location "Munich, Germany" --country de --pr
 - `jobcli ziprecruiter <query> ...`
 - `jobcli google <query> ...`
 - `jobcli stepstone <query> ...`
-- `jobcli seen diff --new A.json --seen B.json --out C.json`
-- `jobcli seen update --seen B.json --input C.json --out B.json`
+- `jobcli seen diff --new A.json --seen B.json --out C.json [--stats]`
+- `jobcli seen update --seen B.json --input C.json --out B.json [--stats]`
 - `jobcli proxies check`
 
 ## Output Formats
@@ -132,6 +132,10 @@ Search flags:
 - `--seen` (path to seen jobs JSON history)
 - `--new-only` (output only unseen jobs; requires `--seen`)
 - `--new-out` (write unseen jobs JSON file; requires `--seen`)
+
+Seen flags:
+
+- `--stats` (print diff/merge stats to stdout)
 
 ## Seen Jobs Workflow
 

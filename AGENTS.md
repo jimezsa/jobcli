@@ -67,6 +67,7 @@ Seen Jobs:
 
 - `internal/seen/compare.go`
 - `internal/seen/io.go`
+- `internal/cmd/seen.go` — `seen diff/update` CLI commands; supports `--stats` to print diff/merge counts.
 
 ## Adding a New Scraper
 

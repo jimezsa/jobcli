@@ -50,8 +50,8 @@ make
 - `jobcli ziprecruiter <query> ...`
 - `jobcli google <query> ...`
 - `jobcli stepstone <query> ...`
-- `jobcli seen diff --new A.json --seen B.json --out C.json`
-- `jobcli seen update --seen B.json --input C.json --out B.json`
+- `jobcli seen diff --new A.json --seen B.json --out C.json [--stats]`
+- `jobcli seen update --seen B.json --input C.json --out B.json [--stats]`
 - `jobcli proxies check`
 
 ## Global flags
