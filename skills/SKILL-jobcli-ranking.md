@@ -47,17 +47,9 @@ Read from `CVSUMMARY.md`:
 
 If missing, stop and ask user to run the CV summary skill first.
 
-## 2) Setup
-
-Run once if needed:
-
-```bash
-jobcli config init
-```
-
 Collect `location` and `country`. Use `jobs_seen.json` as seen history (only persistent state file).
 
-## 3) Search per keyword (sequential)
+## 2) Search per keyword (sequential)
 
 For each keyword:
 
@@ -74,7 +66,7 @@ Rules:
 
 `--seen-update` marks discovered unseen jobs as seen in `jobs_seen.json`.
 
-## 4) Aggregate + dedupe (single command type)
+## 3) Aggregate + dedupe (single command type)
 
 For each `jobs_new_keyword_<n>.json` run:
 
@@ -91,7 +83,7 @@ Notes:
 
 If `jobs_new_all.json` is empty, report "no new jobs found" and stop (no ranking).
 
-## 5) Score (0.0-1.0)
+## 4) Score (0.0-1.0)
 
 Equal weights (0.2 each):
 
@@ -103,7 +95,7 @@ Equal weights (0.2 each):
 
 Final score = average of the 5 dimensions.
 
-## 6) Output
+## 5) Output
 
 Sort by score descending.
 
@@ -126,7 +118,7 @@ Use `🥈` for rank 2, `🥉` for rank 3, and `N.` for rank 4+.
 Do not persist ranked output unless user explicitly asks to keep `ranked_jobs.md`.
 After results, send one short funny motivational line.
 
-## 7) Cleanup
+## 6) Cleanup
 
 Delete:
 
