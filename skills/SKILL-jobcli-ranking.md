@@ -35,8 +35,10 @@ metadata:
 Daily/on-demand flow: read `CVSUMMARY.md`, search jobs with `jobcli`, dedupe,
 score against persona, and return ranked results.
 
-This skill only ranks *new/unseen* jobs, and updates the seen-history JSON
+This skill only ranks _new/unseen_ jobs, and updates the seen-history JSON
 after searching so future runs don’t re-rank the same listings.
+Persist only `jobs_seen.json` between runs; treat all other run artifacts as
+temporary.
 
 > Prerequisite: `CVSUMMARY.md` exists in cwd.
 > Trigger: user asks for job search/ranking.
@@ -62,6 +64,7 @@ jobcli config init
 Ask for `location` and `country` if unknown.
 
 Decide on a seen-history path (default: `jobs_seen.json` in cwd).
+This is the only state file that should persist across runs.
 
 ## 3) Search per keyword (sequential, new-only)
 
@@ -83,12 +86,25 @@ Seen-history behavior:
 
 - `--seen-update` auto-merges newly discovered unseen jobs into `jobs_seen.json` after each successful search run.
 - This marks all discovered new jobs as “seen” even if the user does not apply to them.
-- If you want to review/rank before marking jobs as seen, do not use `--seen-update`; instead run `jobcli seen update ...` manually after review.
 
-## 4) Aggregate + dedupe (new jobs only)
+## 4) Aggregate + dedupe (new jobs only, via `jobcli`)
 
-Merge `jobs_new_keyword_*.json` into `jobs_new_all.json`, dedupe by full URL,
-keep matched keyword list per job.
+Do not use ad-hoc JSON merge scripts. Use only `jobcli seen update` to build
+one deduped set.
+
+For each `jobs_new_keyword_<n>.json` (sequential):
+
+```bash
+jobcli seen update --seen jobs_new_all.json --input jobs_new_keyword_<n>.json \
+  --out jobs_new_all.json --stats
+```
+
+Behavior:
+
+- if `jobs_new_all.json` does not exist, first run treats it as empty and creates it.
+- each run merges the current keyword file into `jobs_new_all.json`.
+- repeated URLs are deduped by JobCLI seen merge logic.
+- `jobs_new_all.json` is temporary for this run only.
 
 If `jobs_new_all.json` is empty, report “no new jobs found” and stop (do not
 rank).
@@ -125,13 +141,15 @@ full_url_link_here
 ```
 
 Use `🥈` for rank 2, `🥉` for rank 3, and `N.` for rank 4+.
-Offer saving to `ranked_jobs.md`.
+Do not persist ranked output by default.
+Only save `ranked_jobs.md` if the user explicitly asks to keep it.
 After results, send one short funny motivational line.
 
 ## 7) Cleanup
 
-Delete `jobs_new_keyword_*.json`. Keep `jobs_new_all.json`, `CVSUMMARY.md`, and
-`ranked_jobs.md` (if created).
+Delete `jobs_new_keyword_*.json` and `jobs_new_all.json`.
+Delete `ranked_jobs.md` unless the user explicitly asked to keep it.
+Keep `CVSUMMARY.md` and `jobs_seen.json`.
 
 ## Notes
 
