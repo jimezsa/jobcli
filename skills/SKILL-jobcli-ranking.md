@@ -64,7 +64,7 @@ For each keyword:
 ```bash
 jobcli search "<keyword>" --location "<location>" --country "<code>" --limit 30 \
   --seen jobs_seen.json --new-only --seen-update \
-  --json --output jobs_new_keyword_<n>.json
+  --json --output jobs_new_keyword_<n>.json --hours 72
 ```
 
 Rules:
@@ -143,4 +143,3 @@ Keep:
 
 - privacy first: never expose personal data from `CVSUMMARY.md`
 - if rate-limited often, suggest lower `--limit 10` or proxies
-- for daily refreshes, consider `--hours 48`
