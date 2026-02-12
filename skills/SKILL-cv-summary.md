@@ -1,6 +1,6 @@
 ---
 name: jobcli-cv-summary
-description: Extract an anonymous persona summary and search keywords from a CV PDF.
+description: Extract per-user anonymous persona summaries and search keywords from CV PDFs.
 homepage: https://github.com/jimezsa/jobcli
 metadata:
   {
@@ -16,22 +16,39 @@ metadata:
 
 # CV Summary Generator for JobCLI
 
-One-time (or on-CV-update) skill that reads a PDF résumé, produces a
-privacy-safe persona summary, generates job-search keywords, and writes
-everything to `CVSUMMARY.md`. That file is then consumed by the companion
-skill **SKILL-jobsearch.md** for daily job searching and ranking.
+One-time (or on-CV-update) skill that reads one or more PDF resumes, produces a
+privacy-safe persona summary per user, generates job-search keywords, and writes
+everything to a user-scoped `CVSUMMARY.md`. These files are consumed by
+**SKILL-jobcli-ranking.md** for per-user job searching and ranking.
 
-> **Trigger:** the user provides a `.pdf` CV/resume file.
-
----
-
-## 1 — Read the CV
-
-Use your PDF reading capability to ingest the full text of the provided CV.
+> **Trigger:** the user provides one or more `.pdf` CV/resume files.
 
 ---
 
-## 2 — Generate the Ultra-Compact Persona Summary
+## 0 — Multi-User Inputs (Required)
+
+For each CV, collect a stable user identifier before processing:
+
+- `user_id` (required): lowercase slug, only `[a-z0-9_-]` (examples: `ana`, `user_02`, `candidate-sf`)
+- `cv_pdf_path` (required): path to that user's CV PDF
+- `default_location` (optional but recommended): city/region or `Remote`
+- `default_country_code` (optional but recommended): ISO-3166-1 alpha-2 (for example `US`, `MX`, `ES`)
+
+Storage convention (must be followed):
+
+- `profiles/<user_id>/CVSUMMARY.md`
+
+Never store multiple users in one shared `CVSUMMARY.md`.
+
+---
+
+## 1 — Read the CV (Per User)
+
+Use your PDF reading capability to ingest the full text of that user's CV.
+
+---
+
+## 2 — Generate the Ultra-Compact Persona Summary (Per User)
 
 Produce a **concise professional summary** (max 120 words) that captures:
 
@@ -70,13 +87,19 @@ Each keyword should be 2–5 words and suitable for direct use in
 
 ---
 
-## 4 — Save to CVSUMMARY.md
+## 4 — Save to `profiles/<user_id>/CVSUMMARY.md`
 
-Create (or overwrite) a file named **`CVSUMMARY.md`** in the current working
-directory with the following structure:
+Create (or overwrite) a file named **`profiles/<user_id>/CVSUMMARY.md`** with
+the following structure:
 
 ```markdown
 # CV Summary
+
+## User Context
+
+- User ID: <user_id>
+- Default Location: <default_location or Unknown>
+- Default Country Code: <default_country_code or Unknown>
 
 ## Persona Summary
 
@@ -123,13 +146,17 @@ Use the persona summary above to score each job from 0.0 to 1.0 based on:
 
 Confirm the file was written and show its contents to the user.
 
+If multiple users were provided, repeat Steps 1-4 for each `(user_id, cv_pdf_path)` pair.
+
 ---
 
 ## Notes
 
 - **Privacy first:** never expose personal data from the CV in the summary,
   keywords, or any output file.
+- **Isolation rule:** each user must map to exactly one folder under `profiles/`;
+  never merge summaries across users.
 - **Re-run trigger:** run this skill again only when the user provides a new
-  or updated CV.
-- **Next step:** once `CVSUMMARY.md` exists, use **SKILL-jobsearch.md** to
-  search for jobs and rank them against the persona.
+  or updated CV for that specific `user_id`.
+- **Next step:** once `profiles/<user_id>/CVSUMMARY.md` exists, use
+  **SKILL-jobcli-ranking.md** to search and rank jobs for that same `user_id`.
