@@ -21,37 +21,17 @@ Fast, single-binary job aggregation CLI written in Go. Scrapes multiple sites in
 
 ## Installation
 
-### Homebrew (macOS/Linux)
+Choose one method:
 
-```bash
-brew install jimezsa/tap/jobcli
-```
-
-### Windows
-
-1. Download the latest `.zip` for your architecture from the [Releases](https://github.com/jimezsa/jobcli/releases) page:
-   - `jobcli_<version>_windows_amd64.zip` for 64-bit Intel/AMD
-   - `jobcli_<version>_windows_arm64.zip` for ARM64
-2. Extract the `.zip` file
-3. Move `jobcli.exe` to a directory in your `PATH`, or run it directly:
-
-```powershell
-.\jobcli.exe --help
-```
-
-### Build from source
+- macOS/Linux (Homebrew): `brew install jimezsa/tap/jobcli`
+- Windows: download the latest `.zip` from [Releases](https://github.com/jimezsa/jobcli/releases), extract, and run `jobcli.exe` (or add it to `PATH`)
+- Build from source:
 
 ```bash
 git clone https://github.com/jimezsa/jobcli
 cd jobcli
 make
-./jobcli
-```
-
-Run:
-
-```bash
-jobcli --help
+./jobcli --help
 ```
 
 ## Quick Start
