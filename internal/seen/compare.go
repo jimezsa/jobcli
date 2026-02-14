@@ -43,14 +43,21 @@ func Normalize(value string) string {
 	return strings.Join(fields, " ")
 }
 
-// Key builds the normalized title+company key for a job.
+// Key builds a normalized comparison key for a job.
+// Primary key is title+company; URL is used as a fallback when needed.
 func Key(job models.Job) (string, bool) {
 	title := Normalize(job.Title)
 	company := Normalize(job.Company)
-	if title == "" || company == "" {
-		return "", false
+	if title != "" && company != "" {
+		return title + keySeparator + company, true
 	}
-	return title + keySeparator + company, true
+
+	jobURL := Normalize(job.URL)
+	if jobURL != "" {
+		return "url" + keySeparator + jobURL, true
+	}
+
+	return "", false
 }
 
 // Diff returns unseen jobs from newJobs using existing seenJobs keys.

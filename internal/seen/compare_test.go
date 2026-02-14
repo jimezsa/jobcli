@@ -26,17 +26,29 @@ func TestKey(t *testing.T) {
 	}
 }
 
+func TestKey_FallbackToURL(t *testing.T) {
+	job := models.Job{Title: "", Company: "", URL: "https://example.com/jobs/1"}
+	got, ok := Key(job)
+	if !ok {
+		t.Fatalf("expected valid fallback key")
+	}
+	want := "url::https://example.com/jobs/1"
+	if got != want {
+		t.Fatalf("Key() = %q, want %q", got, want)
+	}
+}
+
 func TestDiff(t *testing.T) {
 	newJobs := []models.Job{
 		{Title: "Senior Engineer", Company: "Acme", URL: "https://example.com/new-1"},
 		{Title: "Senior   Engineer", Company: " Acme ", URL: "https://example.com/new-1-dupe"},
 		{Title: "Platform Engineer", Company: "Beta", URL: "https://example.com/new-2"},
-		{Title: "", Company: "Invalid", URL: "https://example.com/invalid"},
+		{Title: "", Company: "Invalid", URL: ""},
 	}
 	seenJobs := []models.Job{
 		{Title: "senior engineer", Company: "acme", URL: "https://example.com/seen-1"},
 		{Title: "senior engineer", Company: "acme", URL: "https://example.com/seen-1-dupe"},
-		{Title: "No Company", Company: "   ", URL: "https://example.com/seen-invalid"},
+		{Title: "No Company", Company: "   ", URL: ""},
 	}
 
 	unseen, stats := Diff(newJobs, seenJobs)
@@ -71,12 +83,12 @@ func TestDiff(t *testing.T) {
 func TestMergeAndIdempotency(t *testing.T) {
 	existing := []models.Job{
 		{Title: "Senior Engineer", Company: "Acme", URL: "https://example.com/seen-1"},
-		{Title: "", Company: "Unknown", URL: "https://example.com/seen-invalid"},
+		{Title: "", Company: "Unknown", URL: ""},
 	}
 	input := []models.Job{
 		{Title: "Senior Engineer", Company: "Acme", URL: "https://example.com/new-collision"},
 		{Title: "Platform Engineer", Company: "Beta", URL: "https://example.com/new-2"},
-		{Title: "", Company: "Broken", URL: "https://example.com/new-invalid"},
+		{Title: "", Company: "Broken", URL: ""},
 	}
 
 	merged, stats := Merge(existing, input)
@@ -102,5 +114,25 @@ func TestMergeAndIdempotency(t *testing.T) {
 	}
 	if statsAgain.Added != 0 {
 		t.Fatalf("expected second merge Added=0, got %d", statsAgain.Added)
+	}
+}
+
+func TestDiff_UsesURLFallbackWhenTitleCompanyMissing(t *testing.T) {
+	newJobs := []models.Job{
+		{Title: "", Company: "", URL: "https://example.com/job-1"},
+	}
+	seenJobs := []models.Job{
+		{Title: "", Company: "", URL: "https://example.com/job-1"},
+	}
+
+	unseen, stats := Diff(newJobs, seenJobs)
+	if len(unseen) != 0 {
+		t.Fatalf("expected no unseen jobs, got %d", len(unseen))
+	}
+	if stats.InvalidNew != 0 {
+		t.Fatalf("InvalidNew = %d, want 0", stats.InvalidNew)
+	}
+	if stats.InvalidSeen != 0 {
+		t.Fatalf("InvalidSeen = %d, want 0", stats.InvalidSeen)
 	}
 }

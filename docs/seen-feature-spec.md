@@ -9,7 +9,7 @@ processed in previous runs.
 - `B.json`: historical seen jobs
 - `C.json`: unseen jobs (`A - B`)
 
-Primary match rule: compare normalized `title + company`.
+Primary match rule: compare normalized `title + company` (with URL fallback when title/company is missing).
 
 ## Final Command Surface
 
@@ -29,10 +29,14 @@ Search/site integration flags:
 All files are JSON arrays compatible with existing `jobcli --json` output
 (`[]models.Job`).
 
-Minimum required fields for comparison:
+Preferred fields for comparison:
 
 - `title`
 - `company`
+
+Fallback field (when title/company is missing):
+
+- `url`
 
 All other job fields are preserved when writing `C.json` and updating `B.json`.
 
@@ -40,7 +44,8 @@ All other job fields are preserved when writing `C.json` and updating `B.json`.
 
 Normalized key:
 
-`key = normalize(title) + "::" + normalize(company)`
+- Primary: `key = normalize(title) + "::" + normalize(company)`
+- Fallback: `key = "url::" + normalize(url)`
 
 `normalize()` v1:
 
@@ -50,7 +55,7 @@ Normalized key:
 
 Behavior:
 
-- Record is invalid for comparison if normalized title or company is empty.
+- Record is invalid for comparison only if both primary and fallback keys are unavailable.
 - `seen diff` skips invalid records and reports count.
 - `A` and `B` are deduplicated by key during processing.
 - A job is considered seen if its key exists in `B`.
@@ -90,7 +95,7 @@ Flags:
 
 Merge rules:
 
-- Use same normalized key (`title + company`)
+- Use same normalized key (primary `title + company`, fallback `url`)
 - Keep existing `B` entry on key collision
 - Append only new unique entries from `--input`
 
@@ -198,7 +203,7 @@ Command tests:
 ## Acceptance Criteria
 
 - `seen diff` correctly outputs unseen `C.json` from `A.json` and `B.json` using
-  normalized `title + company`.
+  normalized keys (primary `title + company`, fallback `url`).
 - `seen update` merges new ranked jobs into `B.json` without duplicates.
 - `search` and site commands support `--seen` and can return unseen jobs in one
   command.
