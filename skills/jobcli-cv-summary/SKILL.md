@@ -29,13 +29,14 @@ everything to a user-scoped `CVSUMMARY.md`. These files are consumed by
 
 For each CV, collect a stable user identifier before processing:
 
-- `user_id` (required): lowercase slug, only `[a-z0-9_-]` (examples: `ana`, `user_02`, `candidate-sf`)
+- `user_id` (required): lowercase slug, only `[a-z0-9_-]`
 - `cv_pdf_path` (required): path to that user's CV PDF
 - `default_location` (optional but recommended): city/region or `Remote`
 - `default_country_code` (optional but recommended): ISO-3166-1 alpha-2 (for example `US`, `MX`, `ES`)
 
 Storage convention (must be followed):
 
+- `profiles/<user_id>/resume.pdf`
 - `profiles/<user_id>/CVSUMMARY.md`
 
 Never store multiple users in one shared `CVSUMMARY.md`.
@@ -87,7 +88,11 @@ Each keyword should be 2–5 words and suitable for direct use in
 
 ---
 
-## 4 — Save to `profiles/<user_id>/CVSUMMARY.md`
+## 4 — Save Outputs to `profiles/<user_id>/`
+
+Save the source CV PDF in the same folder as the summary:
+
+- Copy `cv_pdf_path` to **`profiles/<user_id>/resume.pdf`** (overwrite if it already exists).
 
 Create (or overwrite) a file named **`profiles/<user_id>/CVSUMMARY.md`** with
 the following structure:
@@ -144,7 +149,12 @@ Use the persona summary above to score each job from 0.0 to 1.0 based on:
 - Language requirements (does the persona meet them?)
 ```
 
-Confirm the file was written and show its contents to the user.
+Confirm both files were written:
+
+- `profiles/<user_id>/resume.pdf`
+- `profiles/<user_id>/CVSUMMARY.md`
+
+Show the summary contents to the user.
 
 If multiple users were provided, repeat Steps 1-4 for each `(user_id, cv_pdf_path)` pair.
 
