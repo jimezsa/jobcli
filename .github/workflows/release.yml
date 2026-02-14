@@ -45,21 +45,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PUBLISHER_TOKEN }}
 
-      - name: Generate and apply release notes
+      - name: Apply release notes from CHANGELOG
         uses: actions/github-script@v7
         env:
           RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         with:
           github-token: ${{ secrets.PUBLISHER_TOKEN }}
           script: |
+            const fs = require("fs");
             const { owner, repo } = context.repo;
             const tag = process.env.RELEASE_TAG;
+            const version = tag.replace(/^v/, "");
+            const changelog = fs.readFileSync("CHANGELOG.md", "utf8");
 
-            const generated = await github.rest.repos.generateReleaseNotes({
-              owner,
-              repo,
-              tag_name: tag,
-            });
+            const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const pattern = new RegExp(`## \\[${escapeRegExp(version)}\\][\\s\\S]*?(?=\\n## \\[|$)`);
+            const match = changelog.match(pattern);
+            if (!match) {
+              core.setFailed(`No CHANGELOG section found for version ${version}`);
+              return;
+            }
 
             const release = await github.rest.repos.getReleaseByTag({
               owner,
@@ -71,5 +76,5 @@ jobs:
               owner,
               repo,
               release_id: release.data.id,
-              body: generated.data.body,
+              body: match[0].trim(),
             });
