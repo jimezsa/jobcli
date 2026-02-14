@@ -210,7 +210,8 @@ func jobFromJobPosting(value map[string]any, site string) models.Job {
 		}
 	}
 	job.Location = locationFromJSONLD(value["jobLocation"])
-	job.Snippet = truncate(cleanText(stringValue(value["description"])), 240)
+	job.Description = cleanText(stringValue(value["description"]))
+	job.Snippet = truncate(job.Description, 240)
 	job.Remote = strings.Contains(strings.ToLower(job.Location), "remote")
 	return job
 }

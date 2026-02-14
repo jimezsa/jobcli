@@ -13,6 +13,7 @@ type Job struct {
 	Remote      bool      `json:"remote,omitempty"`
 	JobType     string    `json:"job_type,omitempty"`
 	Salary      string    `json:"salary,omitempty"`
+	Description string    `json:"description,omitempty"`
 	Snippet     string    `json:"snippet,omitempty"`
 	PostedAt    time.Time `json:"posted_at,omitempty"`
 	PostedAtRaw string    `json:"posted_at_raw,omitempty"`

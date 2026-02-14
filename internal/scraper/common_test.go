@@ -126,6 +126,9 @@ func TestJSONLDSalaryAndLocation(t *testing.T) {
 	if !strings.HasSuffix(job.Snippet, "...") {
 		t.Fatalf("expected snippet to be truncated, got %q", job.Snippet)
 	}
+	if job.Description == "" {
+		t.Fatalf("expected description to be populated")
+	}
 }
 
 func TestDedupeAndFilterRemote(t *testing.T) {
