@@ -70,6 +70,12 @@ func (s *Stepstone) Search(ctx context.Context, params models.SearchParams) ([]m
 			if _, ok := seen[job.URL]; ok {
 				continue
 			}
+			if job.Description == "" {
+				job.Description = s.fetchStepstoneDescription(ctx, job.URL)
+			}
+			if job.Description == "" {
+				job.Description = job.Snippet
+			}
 			seen[job.URL] = struct{}{}
 			jobs = append(jobs, job)
 			added++
@@ -227,23 +233,16 @@ func stepstoneParseCard(card *goquery.Selection, title string) (string, string, 
 		candidates = append(candidates, line)
 	}
 
-	var company, location, snippet string
+	var company, location string
 	if len(candidates) > 0 {
 		company = candidates[0]
 	}
 	if len(candidates) > 1 {
 		location = candidates[1]
 	}
-	if len(candidates) > 2 {
-		for _, line := range candidates[2:] {
-			if len(line) >= 30 {
-				snippet = line
-				break
-			}
-		}
-		if snippet == "" {
-			snippet = candidates[2]
-		}
+	snippet := stepstoneSnippetFromCard(card)
+	if !stepstoneIsUsableSnippet(snippet, company, location) {
+		snippet = ""
 	}
 
 	if posted == "" {
@@ -321,4 +320,77 @@ func stepstoneIsNoiseLine(line string) bool {
 		return true
 	}
 	return false
+}
+
+func stepstoneSnippetFromCard(card *goquery.Selection) string {
+	if card == nil || card.Length() == 0 {
+		return ""
+	}
+	return firstText(
+		card,
+		"[data-at='job-item-teaser']",
+		"[data-testid='job-item-teaser']",
+		"p[class*='teaser']",
+		"div[class*='teaser']",
+	)
+}
+
+func stepstoneIsUsableSnippet(snippet string, company string, location string) bool {
+	snippet = cleanText(snippet)
+	if snippet == "" {
+		return false
+	}
+	if snippet == company || snippet == location {
+		return false
+	}
+	if stepstoneIsNoiseLine(snippet) || stepstoneIsPostedLine(snippet) {
+		return false
+	}
+	return true
+}
+
+func (s *Stepstone) fetchStepstoneDescription(ctx context.Context, rawURL string) string {
+	rawURL = strings.TrimSpace(rawURL)
+	if rawURL == "" {
+		return ""
+	}
+
+	doc, err := fetchDocument(ctx, s.client, rawURL, map[string]string{
+		"accept-language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
+	})
+	if err != nil {
+		return ""
+	}
+	return parseStepstoneDescription(doc)
+}
+
+func parseStepstoneDescription(doc *goquery.Document) string {
+	if doc == nil {
+		return ""
+	}
+
+	if description := firstText(
+		doc.Selection,
+		"div[data-at='jobad-description']",
+		"section[data-at='jobad-description']",
+		"div[class*='jobad-description']",
+		"section[class*='jobad-description']",
+		"div[class*='listing-content-provider']",
+		"article[class*='listing-content-provider']",
+		"div[class*='job-description']",
+	); description != "" {
+		return description
+	}
+
+	jobs := parseJSONLDJobs(doc, SiteStepstone)
+	for _, job := range jobs {
+		if job.Description != "" {
+			return job.Description
+		}
+		if job.Snippet != "" {
+			return job.Snippet
+		}
+	}
+
+	return ""
 }
