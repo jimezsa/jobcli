@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.2.0] - 2026-02-14
+
+### Added
+
+- Added `description` to the normalized `Job` model and JSON output
+- Added LinkedIn job-detail description fetch (`jobs-guest` job posting endpoint) with fallback to card snippet
+- Added Stepstone job-detail description extraction with selector + JSON-LD fallback
+- Added GitHub release workflow step to auto-generate and apply release notes for tagged releases
+- Added regression tests for LinkedIn/Stepstone snippet and description parsing plus seen-key fallback behavior
+
+### Changed
+
+- Improved LinkedIn and Stepstone snippet parsing to avoid metadata/location text being used as job summary
+- Updated seen-job keying to prefer normalized `title + company` and fallback to URL when title/company is missing
+
+### Fixed
+
+- Fixed `--new-only` dropping valid jobs when providers omit `company` by using URL-based fallback keys in seen diff/merge
+- Fixed empty or misleading snippet values for LinkedIn/Stepstone job cards caused by overly broad card-text extraction
+
 ## [0.1.2] - 2026-02-11
 
 ### Added
