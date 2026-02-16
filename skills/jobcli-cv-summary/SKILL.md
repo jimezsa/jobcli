@@ -80,7 +80,6 @@ Extract structured fields:
 - `work_mode`: Remote | Hybrid | Onsite | Flexible
 - `location_constraints`: list of countries/regions/cities
 - `language_requirements`: list with level
-- `compensation_floor`: optional object `{amount,currency}`
 
 ## 4) Generate Search Keyword Bank
 
@@ -131,7 +130,6 @@ Create `profiles/<user_id>/CVSUMMARY.md`:
 - Work Mode: <...>
 - Location Constraints: <...>
 - Language Requirements: <...>
-- Compensation Floor: <optional>
 
 ## Search Keywords
 
@@ -177,7 +175,6 @@ Create `profiles/<user_id>/persona_profile.json`:
   "work_mode": "Remote",
   "location_constraints": ["US", "Canada"],
   "language_requirements": ["English (Fluent)"],
-  "compensation_floor": { "amount": 130000, "currency": "USD" },
   "keywords": {
     "english": ["...10 items..."],
     "original_language": ["...10 items..."],

@@ -178,7 +178,7 @@ Penalties:
 - missing must-have cluster: `-0.15`
 - strong over/under qualification mismatch: `-0.10`
 - sparse or ambiguous posting data: `-0.05`
-- missing description (fallback to snippet-only): `-0.05`
+- missing description (title-only fallback): `-0.05`
 
 Formula:
 

@@ -44,7 +44,6 @@ Extend `profiles/<user_id>/CVSUMMARY.md` with a machine-readable section:
 - Work Mode: Remote or Hybrid
 - Location Constraints: US, Canada
 - Language Requirements: English (Fluent)
-- Compensation Floor (optional): 130000 USD
 ```
 
 Also write JSON mirror for stable parsing:
