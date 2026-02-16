@@ -1,6 +1,6 @@
 ---
 name: jobcli-cv-summary
-description: Extract per-user anonymous persona summaries and search keywords from CV PDFs.
+description: Extract per-user anonymous persona summaries, machine-readable persona profiles, and keyword banks from CV PDFs.
 homepage: https://github.com/jimezsa/jobcli
 metadata:
   {
@@ -14,88 +14,99 @@ metadata:
   }
 ---
 
-# CV Summary Generator for JobCLI
+# CV Summary Generator for JobCLI (v2)
 
-One-time (or on-CV-update) skill that reads one or more PDF resumes, produces a
-privacy-safe persona summary per user, generates job-search keywords, and writes
-everything to a user-scoped `CVSUMMARY.md`. These files are consumed by
-**SKILL-jobcli-ranking.md** for per-user job searching and ranking.
+Generate a privacy-safe persona package per user from CV PDFs.
 
-> **Trigger:** the user provides one or more `.pdf` CV/resume files.
+Outputs from this skill are consumed by `skills/jobcli-job-search/SKILL.md`.
 
----
+Trigger: the user provides one or more `.pdf` CV files.
 
-## 0 — Multi-User Inputs (Required)
+## 0) Multi-User Inputs (Required)
 
-For each CV, collect a stable user identifier before processing:
+For each CV, collect:
 
 - `user_id` (required): lowercase slug, only `[a-z0-9_-]`
-- `cv_pdf_path` (required): path to that user's CV PDF
+- `cv_pdf_path` (required): source CV path
 - `default_location` (optional but recommended): city/region or `Remote`
 - `default_country_code` (optional but recommended): ISO-3166-1 alpha-2 (for example `US`, `MX`, `ES`)
 
-Storage convention (must be followed):
+Storage convention:
 
 - `profiles/<user_id>/resume.pdf`
 - `profiles/<user_id>/CVSUMMARY.md`
+- `profiles/<user_id>/persona_profile.json`
 
-Never store multiple users in one shared `CVSUMMARY.md`.
+Never mix users in one shared summary/profile file.
 
----
+## 1) Read CV Text (Per User)
 
-## 1 — Read the CV (Per User)
+Read the CV PDF and extract text needed for:
 
-Use your PDF reading capability to ingest the full text of that user's CV.
+- skills
+- role level
+- domains
+- languages
+- work-mode/location preference
 
----
+Do not copy raw CV text into outputs.
 
-## 2 — Generate the Ultra-Compact Persona Summary (Per User)
+## 2) Write Persona Summary (Human-Readable)
 
-Produce a **concise professional summary** (max 120 words) that captures:
+Create `## Persona Summary` in max 120 words:
 
-- Years of experience and seniority level.
-- Core technical skills, tools, and frameworks.
-- Domain expertise and industry sectors.
-- Relevant certifications or education level (degree field only, no institution names).
-- Language proficiency (spoken languages and fluency levels).
-- Target role type (e.g., full-time, contract, remote preference).
+- years of experience and seniority
+- core stack and tooling
+- domain/industry focus
+- education/certification category (no school names)
+- language proficiency
+- target role/work mode
 
-**Privacy rules — NEVER include:**
+Privacy rules (strict):
 
-- Full name, email, phone number, or physical address.
-- Employer names, university names, or any other personally identifiable information.
-- Dates of birth, nationalities, or ID numbers.
+- never include name, email, phone, address
+- never include employer, school, or personal identifiers
+- never include DOB, nationality, ID data
 
----
+## 3) Build Persona Profile v2 (Machine-Readable)
 
-## 3 — Generate Search Keywords
+Extract structured fields:
 
-Produce **exactly 20 keyword phrases** that will be used as `jobcli search`
-queries. Each keyword phrase should represent a **realistic job title** that
-matches the persona's skills and experience level.
+- `seniority_target`: Junior | Mid | Mid-Senior | Senior | Staff+
+- `role_family`: list (for example `["Backend","Platform"]`)
+- `must_have_skills`: list (max 12)
+- `preferred_skills`: list (max 15)
+- `excluded_areas`: list (for example `["Frontend-only","QA-only"]`)
+- `work_mode`: Remote | Hybrid | Onsite | Flexible
+- `location_constraints`: list of countries/regions/cities
+- `language_requirements`: list with level
+- `compensation_floor`: optional object `{amount,currency}`
 
-Generate them in two groups:
+## 4) Generate Search Keyword Bank
 
-1. **English keywords** (10 phrases) — use standard English job-market titles
-   (e.g., "Senior Backend Engineer", "DevOps Team Lead").
-2. **Original-language keywords** (10 phrases) — translate or adapt the same
-   intent into the persona's primary working language if it is not English.
-   If the persona's language **is** English, generate 5 alternative/synonym
-   English titles instead (e.g., "Software Developer" vs "Software Engineer").
+Produce exactly 20 realistic title queries, each 2-5 words:
 
-Each keyword should be 2–5 words and suitable for direct use in
-`jobcli search "<keyword>"`.
+1. English: 10 queries
+2. Original language (or English alternatives): 10 queries
 
----
+Also classify each keyword with an intent bucket:
 
-## 4 — Save Outputs to `profiles/<user_id>/`
+- `core_role`
+- `skill_intent`
+- `domain_seniority`
 
-Save the source CV PDF in the same folder as the summary:
+Token-efficiency rule:
 
-- Copy `cv_pdf_path` to **`profiles/<user_id>/resume.pdf`** (overwrite if it already exists).
+- no generic low-intent queries (for example `Engineer`, `Developer`)
+- de-duplicate semantic equivalents
 
-Create (or overwrite) a file named **`profiles/<user_id>/CVSUMMARY.md`** with
-the following structure:
+## 5) Save Outputs
+
+Copy source CV:
+
+- `cv_pdf_path` -> `profiles/<user_id>/resume.pdf` (overwrite allowed)
+
+Create `profiles/<user_id>/CVSUMMARY.md`:
 
 ```markdown
 # CV Summary
@@ -108,65 +119,94 @@ the following structure:
 
 ## Persona Summary
 
-<the ultra-compact persona summary>
+<max-120-word summary>
+
+## Persona Profile v2
+
+- Seniority Target: <...>
+- Role Family: <...>
+- Must-Have Skills: <...>
+- Preferred Skills: <...>
+- Excluded Areas: <...>
+- Work Mode: <...>
+- Location Constraints: <...>
+- Language Requirements: <...>
+- Compensation Floor: <optional>
 
 ## Search Keywords
 
 ### English
 
-1. <keyword 1>
-2. <keyword 2>
-3. <keyword 3>
-4. <keyword 4>
-5. <keyword 5>
-6. <keyword 6>
-7. <keyword 7>
-8. <keyword 8>
-9. <keyword 9>
-10. <keyword 10>
+1. <keyword>
+2. <keyword>
+3. <keyword>
+4. <keyword>
+5. <keyword>
+6. <keyword>
+7. <keyword>
+8. <keyword>
+9. <keyword>
+10. <keyword>
 
 ### Original Language (<language name>)
 
-1. <keyword 1>
-2. <keyword 2>
-3. <keyword 3>
-4. <keyword 4>
-5. <keyword 5>
-6. <keyword 6>
-7. <keyword 7>
-8. <keyword 8>
-9. <keyword 9>
-10. <keyword 10>
-
-## Ranking Criteria
-
-Use the persona summary above to score each job from 0.0 to 1.0 based on:
-
-- Title match (does the job title align with the persona's level and domain?)
-- Skill overlap (how many of the persona's core skills appear in the description?)
-- Domain fit (is the industry/sector relevant?)
-- Seniority alignment (junior/mid/senior match)
-- Language requirements (does the persona meet them?)
+1. <keyword>
+2. <keyword>
+3. <keyword>
+4. <keyword>
+5. <keyword>
+6. <keyword>
+7. <keyword>
+8. <keyword>
+9. <keyword>
+10. <keyword>
 ```
 
-Confirm both files were written:
+Create `profiles/<user_id>/persona_profile.json`:
 
-- `profiles/<user_id>/resume.pdf`
-- `profiles/<user_id>/CVSUMMARY.md`
+```json
+{
+  "user_id": "<user_id>",
+  "default_location": "<value-or-Unknown>",
+  "default_country_code": "<value-or-Unknown>",
+  "seniority_target": "Mid-Senior",
+  "role_family": ["Backend", "Platform"],
+  "must_have_skills": ["Go", "SQL", "APIs", "Docker"],
+  "preferred_skills": ["Kubernetes", "AWS", "Terraform"],
+  "excluded_areas": ["Frontend-only", "QA-only"],
+  "work_mode": "Remote",
+  "location_constraints": ["US", "Canada"],
+  "language_requirements": ["English (Fluent)"],
+  "compensation_floor": { "amount": 130000, "currency": "USD" },
+  "keywords": {
+    "english": ["...10 items..."],
+    "original_language": ["...10 items..."],
+    "bucketed": {
+      "core_role": ["..."],
+      "skill_intent": ["..."],
+      "domain_seniority": ["..."]
+    }
+  }
+}
+```
 
-Show the summary contents to the user.
+## 6) Validation Checklist
 
-If multiple users were provided, repeat Steps 1-4 for each `(user_id, cv_pdf_path)` pair.
+Before finishing, confirm:
 
----
+1. `profiles/<user_id>/resume.pdf` exists
+2. `profiles/<user_id>/CVSUMMARY.md` exists
+3. `profiles/<user_id>/persona_profile.json` exists
+4. summary is privacy-safe
+5. keywords are 2-5 words and de-duplicated
+
+Show the generated summary to the user (not raw CV text).
+
+If multiple users were provided, run steps 1-6 per user.
 
 ## Notes
 
-- **Privacy first:** never expose personal data from the CV in the summary,
-  keywords, or any output file.
-- **Isolation rule:** each user must map to exactly one folder under `profiles/`;
-  never merge summaries across users.
-- **Re-run trigger:** run this skill again only when the user provides a new
-  or updated CV for that specific `user_id`.
-- **Next step:** once `profiles/<user_id>/CVSUMMARY.md` exists, use
-  **SKILL-jobcli-ranking.md** to search and rank jobs for that same `user_id`.
+- privacy first: never expose personal data from CV content
+- isolation rule: each user has its own folder
+- re-run this skill only when that user CV changes
+- next step: run `skills/jobcli-job-search/SKILL.md` for search and ranking

@@ -114,15 +114,22 @@ Output:
 ## Stage 5: Weighted Scoring Model
 
 Score only surviving jobs with explicit evidence per dimension.
+Ranking must compare persona against both job title and job description.
+
+Scoring text policy:
+
+1. Use `title + description` as primary evidence.
+2. Cap description digest to 600 chars for token control.
+3. If description is missing, fallback to `title` only.
 
 ### Scoring dimensions
 
-1. Title-role fit: weight `0.30`
-2. Must-have skill coverage: weight `0.25`
-3. Preferred skill coverage: weight `0.10`
-4. Seniority alignment: weight `0.15`
-5. Work mode + location fit: weight `0.10`
-6. Domain/context fit: weight `0.05`
+1. Title-role fit: weight `0.25`
+2. Description-persona fit: weight `0.25`
+3. Must-have skill coverage (title + description + snippet): weight `0.20`
+4. Preferred skill coverage: weight `0.10`
+5. Seniority alignment: weight `0.10`
+6. Work mode + location fit: weight `0.05`
 7. Freshness signal: weight `0.05`
 
 ### Penalties
@@ -130,6 +137,7 @@ Score only surviving jobs with explicit evidence per dimension.
 - Missing must-have cluster: `-0.15`
 - Overqualified/underqualified strong mismatch: `-0.10`
 - Ambiguous/very short posting data: `-0.05`
+- Missing description (title-only fallback): `-0.05`
 
 ### Formula
 
@@ -142,6 +150,7 @@ Output per job:
 - `missing_must_haves`
 - `penalties_applied`
 - `confidence` (`high|medium|low`)
+- `scoring_text_used` (title + description digest, or title-only fallback)
 
 ## Stage 6: Decision Bands
 

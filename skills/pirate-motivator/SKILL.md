@@ -5,7 +5,7 @@ description: Generate funny, short ultra-motivational audio messages for job hun
 
 # Pirate Motivator
 
-Generate hilarious ultra-motivational audio clips with an angry pirate yelling encouragement about job hunting.
+Generate short motivational audio clips with an angry pirate voice for job-hunt encouragement.
 
 ## Requirements
 
@@ -21,7 +21,7 @@ The script outputs `MEDIA: /path/to/file.mp3` which OpenClaw will send to the us
 
 ## Workflow
 
-1. **Generate the message**: Write a short (1-3 sentences), intense, funny motivational message about job hunting. Channel angry pirate energy ?~@~T use phrases like "Arrr!", "ye scallywag", "landlubber", etc.
+1. **Generate the message**: Write a short (1-2 sentences, max 35 words), intense, funny motivational message about job hunting. Channel angry pirate energy and use phrases like "Arrr!", "ye scallywag", "landlubber", etc.
 
 2. **Run the script**:
 
@@ -30,6 +30,12 @@ The script outputs `MEDIA: /path/to/file.mp3` which OpenClaw will send to the us
    ```
 
 3. **Send the audio**: Use the message tool to send the generated MP3 to the user.
+
+## Ranking Integration Rules
+
+- Use this skill only after job ranking output is complete.
+- Never feed motivational text/audio back into ranking logic.
+- Keep motivational output concise to avoid token waste.
 
 ## Example Messages
 
