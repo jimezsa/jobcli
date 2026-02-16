@@ -2,6 +2,21 @@
 
 This document gives an LLM (or any contributor) a quick map of how the project is organized and where to make changes.
 
+## Build & Development Commands
+
+```bash
+make build          # Build binary → ./jobcli
+make test           # Run all tests (go test ./...)
+make lint           # Run golangci-lint
+make fmt            # Format code (goimports + gofumpt)
+make fmt-check      # Format + fail if diff exists (used in CI)
+make tools          # Install dev tools (gofumpt, goimports, golangci-lint) into .tools/
+```
+
+Run a single test: `go test ./internal/seen/ -run TestDiff`
+
+CI runs: fmt-check → test → lint.
+
 ## Top-Level Layout
 
 - `cmd/jobcli/` — binary entrypoint (CLI wiring + runtime initialization).
