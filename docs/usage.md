@@ -51,7 +51,6 @@ make
 - `jobcli indeed <query> ...`
 - `jobcli glassdoor <query> ...`
 - `jobcli ziprecruiter <query> ...`
-- `jobcli google <query> ...`
 - `jobcli stepstone <query> ...`
 - `jobcli seen diff --new A.json --seen B.json --out C.json [--stats]`
 - `jobcli seen update --seen B.json --input C.json --out B.json [--stats]`

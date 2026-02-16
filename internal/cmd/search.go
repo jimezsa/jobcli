@@ -375,8 +375,6 @@ func expandAliases(sites []string) []string {
 	out := make([]string, 0, len(sites))
 	for _, site := range sites {
 		switch site {
-		case "googlejobs", "google-jobs", "googlejobs.com":
-			out = append(out, scraper.SiteGoogleJobs)
 		case "zip", "zip-recruiter":
 			out = append(out, scraper.SiteZipRecruiter)
 		case "stepstone.de", "stepstone-de":

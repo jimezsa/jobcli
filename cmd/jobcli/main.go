@@ -121,7 +121,6 @@ func printOverview() {
 		{Name: "indeed", Desc: "Search Indeed."},
 		{Name: "glassdoor", Desc: "Search Glassdoor."},
 		{Name: "ziprecruiter", Desc: "Search ZipRecruiter."},
-		{Name: "google", Desc: "Search Google Jobs."},
 		{Name: "stepstone", Desc: "Search Stepstone."},
 		{Name: "seen", Desc: "Seen jobs utilities."},
 		{Name: "config", Desc: "Manage configuration."},

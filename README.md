@@ -8,7 +8,7 @@ Fast, single-binary job aggregation CLI written in Go. Scrapes multiple sites in
 
 ## Features
 
-- Concurrent scraping across LinkedIn, Indeed, Glassdoor, ZipRecruiter, Google Jobs, and Stepstone
+- Concurrent scraping across LinkedIn, Indeed, Glassdoor, ZipRecruiter, and Stepstone
 - TLS fingerprinting via `tls-client` to reduce blocking
 - Proxy rotation with temporary bans on 403/429 responses
 - Seen-jobs workflow with JSON diff/update commands to avoid reprocessing old listings
@@ -70,7 +70,6 @@ jobcli search "software engineer" --location "Munich, Germany" --country de --pr
 - `jobcli indeed <query> ...`
 - `jobcli glassdoor <query> ...`
 - `jobcli ziprecruiter <query> ...`
-- `jobcli google <query> ...`
 - `jobcli stepstone <query> ...`
 - `jobcli seen diff --new A.json --seen B.json --out C.json [--stats]`
 - `jobcli seen update --seen B.json --input C.json --out B.json [--stats]`

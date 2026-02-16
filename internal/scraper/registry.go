@@ -36,10 +36,6 @@ func Registry(rotator *network.Rotator) (map[string]Scraper, error) {
 	if err != nil {
 		return nil, err
 	}
-	googleJobs, err := makeClient()
-	if err != nil {
-		return nil, err
-	}
 	stepstone, err := makeClient()
 	if err != nil {
 		return nil, err
@@ -50,7 +46,6 @@ func Registry(rotator *network.Rotator) (map[string]Scraper, error) {
 		SiteIndeed:       NewIndeed(indeed),
 		SiteGlassdoor:    NewGlassdoor(glassdoor),
 		SiteZipRecruiter: NewZipRecruiter(zipRecruiter),
-		SiteGoogleJobs:   NewGoogleJobs(googleJobs),
 		SiteStepstone:    NewStepstone(stepstone),
 	}, nil
 }
