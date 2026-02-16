@@ -36,8 +36,7 @@ Goal: rank unseen jobs with high precision while keeping run-time and token use 
 
 Prerequisites:
 
-- `profiles/<user_id>/CVSUMMARY.md`
-- `profiles/<user_id>/persona_profile.json` (preferred)
+- `profiles/<user_id>/persona_profile.json`
 
 Trigger: user asks for job search/ranking for one or more users.
 
@@ -50,7 +49,6 @@ Inputs:
 
 User-scoped files only:
 
-- summary: `profiles/<user_id>/CVSUMMARY.md`
 - persona JSON: `profiles/<user_id>/persona_profile.json`
 - seen state: `profiles/<user_id>/jobs_seen.json` (persistent)
 - per-query temp: `profiles/<user_id>/jobs_new_keyword_<n>.json`
@@ -64,15 +62,7 @@ Never cross user paths.
 
 ## 1) Persona Input Priority
 
-Load persona in this order:
-
-1. `persona_profile.json` (first choice)
-2. fallback to `CVSUMMARY.md` sections:
-   - `## User Context`
-   - `## Persona Summary`
-   - `## Persona Profile v2`
-   - `## Search Keywords`
-
+Load persona from `profiles/<user_id>/persona_profile.json` only.
 If missing required persona data, stop and ask to run `jobcli-cv-summary` first.
 
 Resolve location/country:
@@ -103,6 +93,7 @@ Build up to 12 queries from persona/keyword bank:
 3. domain/seniority variants: 3-4
 
 De-duplicate semantically similar queries.
+Use only realistic job-position titles (no skill-only/tool-only queries).
 Write query list to:
 
 - `profiles/<user_id>/queries_v2.json`
@@ -247,7 +238,6 @@ Delete temporary artifacts:
 
 Keep persistent artifacts:
 
-- `profiles/<user_id>/CVSUMMARY.md`
 - `profiles/<user_id>/persona_profile.json`
 - `profiles/<user_id>/jobs_seen.json`
 - `profiles/<user_id>/ranking_feedback.json` (if used)

@@ -31,24 +31,11 @@ Use a 2-stage pipeline:
 
 ## Stage 0: Persona Schema Upgrade
 
-Extend `profiles/<user_id>/CVSUMMARY.md` with a machine-readable section:
-
-```markdown
-## Persona Profile v2
-
-- Seniority Target: Mid-Senior
-- Role Family: Backend, Platform
-- Must-Have Skills: Go, SQL, APIs, Docker
-- Preferred Skills: Kubernetes, AWS, Terraform
-- Excluded Areas: Frontend-only, QA-only
-- Work Mode: Remote or Hybrid
-- Location Constraints: US, Canada
-- Language Requirements: English (Fluent)
-```
-
-Also write JSON mirror for stable parsing:
+Use JSON-only persona output:
 
 - `profiles/<user_id>/persona_profile.json`
+
+Do not use `CVSUMMARY.md` in the ranking pipeline.
 
 ## Stage 1: Query Expansion (Recall)
 
@@ -61,7 +48,9 @@ Generate 3 query buckets from persona:
 Rules:
 
 - Keep each query 2-5 words.
+- Use realistic market job-position titles only.
 - Remove low-intent generic terms.
+- Avoid skill-only/tool-only phrases.
 - De-duplicate semantically similar queries.
 
 Output:

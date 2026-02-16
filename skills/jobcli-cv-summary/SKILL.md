@@ -1,6 +1,6 @@
 ---
 name: jobcli-cv-summary
-description: Extract per-user anonymous persona summaries, machine-readable persona profiles, and keyword banks from CV PDFs.
+description: Extract per-user machine-readable persona profiles and keyword banks from CV PDFs.
 homepage: https://github.com/jimezsa/jobcli
 metadata:
   {
@@ -14,151 +14,64 @@ metadata:
   }
 ---
 
-# CV Summary Generator for JobCLI (v2)
+# CV Persona Builder (JSON-only)
 
-Generate a privacy-safe persona package per user from CV PDFs.
-
-Outputs from this skill are consumed by `skills/jobcli-job-search/SKILL.md`.
+Goal: produce one machine-readable persona JSON per user from CV PDFs.
 
 Trigger: the user provides one or more `.pdf` CV files.
 
-## 0) Multi-User Inputs (Required)
+## 0) Inputs (Required)
 
-For each CV, collect:
+Per CV, collect:
 
-- `user_id` (required): lowercase slug, only `[a-z0-9_-]`
-- `cv_pdf_path` (required): source CV path
-- `default_location` (optional but recommended): city/region or `Remote`
-- `default_country_code` (optional but recommended): ISO-3166-1 alpha-2 (for example `US`, `MX`, `ES`)
+- `user_id`: lowercase slug `[a-z0-9_-]`
+- `cv_pdf_path`: source CV path
+- `default_location`: optional
+- `default_country_code`: optional ISO-3166-1 alpha-2
 
-Storage convention:
+## 1) Output Contract (Only JSON)
+
+Write only these files:
 
 - `profiles/<user_id>/resume.pdf`
-- `profiles/<user_id>/CVSUMMARY.md`
 - `profiles/<user_id>/persona_profile.json`
 
-Never mix users in one shared summary/profile file.
+Do not generate `CVSUMMARY.md`.
 
-## 1) Read CV Text (Per User)
+## 2) Extract and Normalize Persona
 
-Read the CV PDF and extract text needed for:
-
-- skills
-- role level
-- domains
-- languages
-- work-mode/location preference
-
-Do not copy raw CV text into outputs.
-
-## 2) Write Persona Summary (Human-Readable)
-
-Create `## Persona Summary` in max 120 words:
-
-- years of experience and seniority
-- core stack and tooling
-- domain/industry focus
-- education/certification category (no school names)
-- language proficiency
-- target role/work mode
-
-Privacy rules (strict):
-
-- never include name, email, phone, address
-- never include employer, school, or personal identifiers
-- never include DOB, nationality, ID data
-
-## 3) Build Persona Profile v2 (Machine-Readable)
-
-Extract structured fields:
+From CV text, extract:
 
 - `seniority_target`: Junior | Mid | Mid-Senior | Senior | Staff+
-- `role_family`: list (for example `["Backend","Platform"]`)
-- `must_have_skills`: list (max 12)
-- `preferred_skills`: list (max 15)
-- `excluded_areas`: list (for example `["Frontend-only","QA-only"]`)
+- `role_family`: array
+- `must_have_skills`: array, max 12
+- `preferred_skills`: array, max 15
+- `excluded_areas`: array
 - `work_mode`: Remote | Hybrid | Onsite | Flexible
-- `location_constraints`: list of countries/regions/cities
-- `language_requirements`: list with level
+- `location_constraints`: array
+- `language_requirements`: array
 
-## 4) Generate Search Keyword Bank
+## 3) Generate Keywords
 
-Produce exactly 20 realistic title queries, each 2-5 words:
+Generate exactly 20 realistic job-position titles (2-5 words each):
 
-1. English: 10 queries
-2. Original language (or English alternatives): 10 queries
+- 10 English
+- 10 original language (or English variants if primary language is English)
 
-Also classify each keyword with an intent bucket:
+Also produce bucketed query sets:
 
 - `core_role`
 - `skill_intent`
 - `domain_seniority`
 
-Token-efficiency rule:
+Token rules:
 
-- no generic low-intent queries (for example `Engineer`, `Developer`)
+- remove generic low-intent terms
 - de-duplicate semantic equivalents
+- use market-standard position titles only
+- do not use skill-only/tool-only phrases (for example `Python`, `Kubernetes`)
 
-## 5) Save Outputs
-
-Copy source CV:
-
-- `cv_pdf_path` -> `profiles/<user_id>/resume.pdf` (overwrite allowed)
-
-Create `profiles/<user_id>/CVSUMMARY.md`:
-
-```markdown
-# CV Summary
-
-## User Context
-
-- User ID: <user_id>
-- Default Location: <default_location or Unknown>
-- Default Country Code: <default_country_code or Unknown>
-
-## Persona Summary
-
-<max-120-word summary>
-
-## Persona Profile v2
-
-- Seniority Target: <...>
-- Role Family: <...>
-- Must-Have Skills: <...>
-- Preferred Skills: <...>
-- Excluded Areas: <...>
-- Work Mode: <...>
-- Location Constraints: <...>
-- Language Requirements: <...>
-
-## Search Keywords
-
-### English
-
-1. <keyword>
-2. <keyword>
-3. <keyword>
-4. <keyword>
-5. <keyword>
-6. <keyword>
-7. <keyword>
-8. <keyword>
-9. <keyword>
-10. <keyword>
-
-### Original Language (<language name>)
-
-1. <keyword>
-2. <keyword>
-3. <keyword>
-4. <keyword>
-5. <keyword>
-6. <keyword>
-7. <keyword>
-8. <keyword>
-9. <keyword>
-10. <keyword>
-```
+## 4) Save JSON
 
 Create `profiles/<user_id>/persona_profile.json`:
 
@@ -187,23 +100,26 @@ Create `profiles/<user_id>/persona_profile.json`:
 }
 ```
 
-## 6) Validation Checklist
+## 5) Privacy Rules
 
-Before finishing, confirm:
+Never include:
+
+- name, email, phone, address
+- employer/school names
+- DOB, nationality, IDs
+
+## 6) Validation
+
+Confirm per user:
 
 1. `profiles/<user_id>/resume.pdf` exists
-2. `profiles/<user_id>/CVSUMMARY.md` exists
-3. `profiles/<user_id>/persona_profile.json` exists
-4. summary is privacy-safe
-5. keywords are 2-5 words and de-duplicated
+2. `profiles/<user_id>/persona_profile.json` exists
+3. JSON schema fields are present
 
-Show the generated summary to the user (not raw CV text).
-
-If multiple users were provided, run steps 1-6 per user.
+If multiple users were provided, repeat steps 0-6 per user.
 
 ## Notes
 
-- privacy first: never expose personal data from CV content
-- isolation rule: each user has its own folder
-- re-run this skill only when that user CV changes
-- next step: run `skills/jobcli-job-search/SKILL.md` for search and ranking
+- users must stay isolated by folder
+- re-run only when CV changes
+- next step: run `skills/jobcli-job-search/SKILL.md`
