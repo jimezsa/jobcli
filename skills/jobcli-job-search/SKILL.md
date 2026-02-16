@@ -189,8 +189,8 @@ For each job capture:
 Bands:
 
 1. `>= 0.80`: strong match
-2. `0.65 - 0.79`: manual review
-3. `< 0.65`: low fit (hide by default)
+2. `0.8 - 0.79`: manual review
+3. `< 0.8`: low fit (hide by default)
 
 Sort by score descending and output top 15 by default.
 
