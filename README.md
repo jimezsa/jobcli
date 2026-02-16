@@ -41,16 +41,13 @@ make
 jobcli
 
 # search software engineer roles in Munich, Germany
-jobcli search "software engineer" --location "Munich, Germany"  --limit 100
+jobcli search "software engineer" --location "Munich, Germany"  --limit 100 --hours 48
 
 # search a single site last 48 hours
 jobcli linkedin "chemical engineer" --location "Munich, Germany"  --limit 10 --hours 48
 
-# search a single site
-jobcli stepstone "hardware engineer" --location "Munich, Germany"  --limit 100
-
 # output only unseen jobs using a seen-history JSON
-jobcli search "software engineer" --location "Munich, Germany" --limit 30 \
+jobcli search "software engineer" --location "Munich, Germany" --limit 30 --hours 48 \
   --seen jobs_seen.json --new-only --json --output jobs_new.json
 
 # update seen-history after reviewing/ranking new jobs
