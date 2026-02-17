@@ -11,9 +11,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 
-DEFAULT_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-DEFAULT_MODEL = "gpt-4.1-mini"
-DEFAULT_API_URL = "https://api.openai.com/v1/chat/completions"
+DEFAULT_API_KEY = os.environ.get(
+    "MINIMAX_API_KEY",
+    os.environ.get("ANTHROPIC_API_KEY", os.environ.get("OPENAI_API_KEY", "")),
+)
+DEFAULT_MODEL = "MiniMax-M2.5"
+DEFAULT_API_URL = os.environ.get("ANTHROPIC_BASE_URL", "https://api.minimax.io/anthropic").rstrip("/") + "/v1/messages"
 
 TITLE_KEYS = ("title", "job_title", "position", "role")
 DESCRIPTION_KEYS = ("description", "snippet", "summary", "details")
@@ -114,15 +117,14 @@ def llm_compare(cvsummary: str, job: Dict[str, Any], api_key: str, model: str, a
 
     payload = {
         "model": model,
-        "temperature": 0,
-        "response_format": {"type": "json_object"},
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
+        "max_tokens": 256,
+        "temperature": 0.1,
+        "system": system_prompt,
+        "messages": [{"role": "user", "content": [{"type": "text", "text": user_prompt}]}],
     }
     headers = {
-        "Authorization": f"Bearer {api_key}",
+        "x-api-key": api_key,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
     }
 
@@ -134,7 +136,35 @@ def llm_compare(cvsummary: str, job: Dict[str, Any], api_key: str, model: str, a
     )
     with urllib.request.urlopen(req, timeout=timeout) as response:
         response_data = json.loads(response.read().decode("utf-8"))
-    content = response_data["choices"][0]["message"]["content"]
+
+    # Anthropic-compatible response shape.
+    content_blocks = response_data.get("content")
+    if isinstance(content_blocks, list):
+        text_parts: List[str] = []
+        for block in content_blocks:
+            if isinstance(block, dict) and block.get("type") == "text":
+                text = block.get("text", "")
+                if isinstance(text, str) and text.strip():
+                    text_parts.append(text.strip())
+        return parse_decision("\n".join(text_parts))
+
+    # Fallback for standard MiniMax/OpenAI-compatible response shape.
+    base_resp = response_data.get("base_resp")
+    if isinstance(base_resp, dict):
+        status_code = int(base_resp.get("status_code", 0))
+        if status_code != 0:
+            status_msg = str(base_resp.get("status_msg", "unknown_error"))
+            raise RuntimeError(f"MiniMax API error {status_code}: {status_msg}")
+
+    content = response_data.get("choices", [{}])[0].get("message", {}).get("content", "")
+    if isinstance(content, list):
+        text_parts: List[str] = []
+        for item in content:
+            if isinstance(item, dict):
+                text = item.get("text", "")
+                if isinstance(text, str) and text.strip():
+                    text_parts.append(text.strip())
+        content = "\n".join(text_parts)
     return parse_decision(content)
 
 
@@ -143,7 +173,7 @@ def main() -> int:
     parser.add_argument("--cvsummary", required=True, help="Path to CVSUMMARY.md")
     parser.add_argument("--jobs-json", required=True, help="Path to jobs JSON (list or nested structure)")
     parser.add_argument("--output", required=True, help="Output path for YES jobs JSON list")
-    parser.add_argument("--api-key", default=DEFAULT_API_KEY, help="LLM API key (default: OPENAI_API_KEY)")
+    parser.add_argument("--api-key", default=DEFAULT_API_KEY, help="LLM API key (default: MINIMAX_API_KEY, fallback: ANTHROPIC_API_KEY/OPENAI_API_KEY)")
     parser.add_argument("--model", default=DEFAULT_MODEL, help=f"Model name (default: {DEFAULT_MODEL})")
     parser.add_argument("--api-url", default=DEFAULT_API_URL, help=f"API URL (default: {DEFAULT_API_URL})")
     parser.add_argument("--timeout", type=int, default=60, help="HTTP timeout seconds")
@@ -151,7 +181,7 @@ def main() -> int:
     args = parser.parse_args()
 
     if not args.api_key:
-        print("Error: OPENAI_API_KEY not set and --api-key not provided", file=sys.stderr)
+        print("Error: MINIMAX_API_KEY/ANTHROPIC_API_KEY/OPENAI_API_KEY not set and --api-key not provided", file=sys.stderr)
         return 1
 
     try:

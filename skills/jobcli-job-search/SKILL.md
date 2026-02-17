@@ -38,7 +38,7 @@ Prerequisites:
 
 - `profiles/<user_id>/CVSUMMARY.md`
 - script: `skills/jobcli-job-search/scripts/job_discriminator.py`
-- `OPENAI_API_KEY` set in environment (or pass `--api-key`)
+- `MINIMAX_API_KEY` set in environment (or pass `--api-key`)
 
 Trigger: user asks for job search and filtering (no ranking).
 
