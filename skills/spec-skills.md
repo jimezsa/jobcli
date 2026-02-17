@@ -1,252 +1,152 @@
-# Skill Ranking Pipeline Plan (v2)
+# Persona Binary Filter Plan (v3)
 
 ## Goal
 
-Improve ranking quality so top jobs strongly match each user's persona profile and reduce false positives.
+Replace ranking with a simple per-job YES/NO filter based on persona summary, with high-confidence decisions only.
 
-## Scope Analyzed
+## Why Change
 
-- `skills/jobcli-cv-summary/SKILL.md`
-- `skills/jobcli-job-search/SKILL.md`
-- `skills/pirate-motivator/SKILL.md`
+Current ranking still lets wrong-domain jobs pass (example: mechanical engineer receiving software roles).  
+New design removes score tuning and keeps only jobs that clearly match persona intent.
 
-## Current Gaps
+## Scope
 
-1. Persona extraction is mostly narrative and not machine-scored.
-2. Ranking uses fixed equal weights (0.2 each) without hard filters.
-3. No explicit negative constraints (forbidden domains, seniority mismatch, onsite-only mismatch, etc.).
-4. No evidence trace per score dimension, so quality is hard to debug.
-5. No feedback loop from user outcomes (`apply`, `skip`, `interview`) to tune weights.
-6. Seen-state timing is not explicit enough; it should guarantee non-matching jobs are not re-ranked on the next run.
-7. `pirate-motivator` is useful for UX engagement but should not influence ranking logic.
+- `skills/spec-skills.md` (this plan)
+- `skills/jobcli-cv-summary/SKILL.md` (persona summary contract)
+- `skills/jobcli-job-search/SKILL.md` (filter-only flow)
+- new script in `skills/jobcli-job-search/scripts/` similar usage style to:
+  `skills/pirate-motivator/scripts/generate_motivation.py`
 
-## Target Architecture
+## New Principles
 
-Use a 2-stage pipeline:
+1. No ranking, no weighted scores, no thresholds like 0.65/0.80.
+2. One isolated context per job evaluation.
+3. Binary output only: `YES` or `NO`.
+4. Keep only `YES` decisions with `HIGH` confidence.
+5. If confidence is not high, default to `NO` (fail closed).
 
-1. **Retrieval stage**: maximize recall for relevant jobs.
-2. **Ranking stage**: maximize precision with persona-aware scoring and hard constraints.
+## Input Contract (Persona Summary First)
 
-## Pipeline v2 (End-to-End)
+Primary persona file:
 
-## Stage 0: Persona Schema Upgrade
+- `profiles/<user_id>/persona_summary.md`
 
-Use JSON-only persona output:
+Optional structured companion:
 
 - `profiles/<user_id>/persona_profile.json`
 
-Do not use `CVSUMMARY.md` in the ranking pipeline.
+`persona_summary.md` must include:
 
-## Stage 1: Query Expansion (Recall)
+1. target roles (allowed role families)
+2. excluded roles/domains (explicit negatives)
+3. seniority target
+4. location/work-mode constraints
+5. must-have skills (short list)
 
-Generate 3 query buckets from persona:
+## End-to-End Flow (Filter-Only)
 
-1. Core role titles (8-10).
-2. Skill-intent titles (6-8).
-3. Domain/seniority variants (6-8).
+## Stage 1: Retrieve Unseen Jobs
+
+Keep existing `jobcli search` collection flow with seen tracking.  
+Collect candidates only; do not rank.
+
+## Stage 2: Deterministic Pre-Filter (Hard Reject)
+
+Before any subagent call, reject obvious mismatches:
+
+1. role-family/domain mismatch from title
+2. excluded domain keyword hit
+3. location/work-mode hard mismatch
+4. severe seniority mismatch when explicit in title
+
+Output rejects to:
+
+- `profiles/<user_id>/jobs_filtered_out.json`
+
+## Stage 3: Subagent Binary Decision (One Context Per Job)
+
+For each surviving job, call a Python script with one job at a time.
+
+Proposed script path:
+
+- `skills/jobcli-job-search/scripts/persona_job_gate.py`
+
+Invocation style (example):
+
+```bash
+python3 skills/jobcli-job-search/scripts/persona_job_gate.py \
+  --persona profiles/<user_id>/persona_summary.md \
+  --job-json /tmp/job_<id>.json
+```
+
+Required script output (JSON):
+
+```json
+{
+  "job_id": "<id>",
+  "decision": "YES",
+  "confidence": "HIGH",
+  "reason": "Title and domain align with mechanical design profile.",
+  "mismatch_flags": []
+}
+```
 
 Rules:
 
-- Keep each query 2-5 words.
-- Use realistic market job-position titles only.
-- Remove low-intent generic terms.
-- Avoid skill-only/tool-only phrases.
-- De-duplicate semantically similar queries.
+1. Evaluate title first, then description.
+2. If title domain conflicts with persona, return `NO` immediately.
+3. Use one prompt/context per job (no batch comparison).
+4. If uncertain, return `NO`.
 
-Output:
+## Stage 4: Final Output (No Ranking)
 
-- `profiles/<user_id>/queries_v2.json`
+Return only jobs where:
 
-## Stage 2: Retrieval Execution
+- `decision = YES`
+- `confidence = HIGH`
 
-Run sequentially per query with bounded recall:
+Display order can be retrieval order or newest-first, but never score-based rank.
 
-```bash
-jobcli search "<query>" --location "<location>" --country "<code>" --limit 30 \
-  --seen profiles/<user_id>/jobs_seen.json --new-only --seen-update \
-  --json --output profiles/<user_id>/jobs_new_keyword_<n>.json --hours 96
-```
+Persist:
 
-Changes vs current flow:
+- `profiles/<user_id>/jobs_yes_high.json`
+- `profiles/<user_id>/jobs_no_or_low.json`
 
-- Use `--seen-update` during retrieval so processed unseen jobs are not re-ranked next run.
-- Increase freshness window to 96h only if volume is low.
-- Keep per-query artifacts for diagnostics until ranking is complete.
+## Stage 5: Seen-State Policy
 
-## Stage 3: Aggregate and Normalize
+Keep `--seen-update` during retrieval so processed jobs do not come back next run, including `NO` jobs.
 
-Aggregate all per-query files into:
+## Implementation Plan
 
-- `profiles/<user_id>/jobs_new_all.json`
+## Phase 1: Spec and Contracts
 
-Normalize before scoring:
+1. Update `skills/jobcli-cv-summary/SKILL.md` to produce `persona_summary.md` (plus JSON if needed).
+2. Update `skills/jobcli-job-search/SKILL.md` to remove ranking language and enforce binary filter flow.
+3. Define exact decision schema: `decision`, `confidence`, `reason`, `mismatch_flags`.
 
-1. Canonicalize URLs.
-2. Trim and lowercase comparable text fields.
-3. Dedupe by URL, then fallback key `(title, company, location)`.
+## Phase 2: Python Subagent Script
 
-## Stage 4: Hard Constraint Filter (Pre-Rank)
+1. Add `skills/jobcli-job-search/scripts/persona_job_gate.py`.
+2. Accept persona summary + single job JSON input.
+3. Return strict JSON only.
+4. Add guardrails for domain mismatch (mechanical vs software false positives).
 
-Reject jobs failing non-negotiables:
+## Phase 3: Integration in Main Agent Workflow
 
-1. Seniority outside target band (large mismatch).
-2. Work mode mismatch (`onsite-only` when persona is remote-only).
-3. Location mismatch outside allowed geographies.
-4. Language mismatch when explicit required language is unsupported.
-5. Excluded role family/domain.
+1. Aggregate retrieved jobs.
+2. Run script once per job (isolated contexts).
+3. Keep only `YES/HIGH`.
+4. Output filtered jobs without ranking.
 
-Output:
+## Phase 4: Validation
 
-- `profiles/<user_id>/jobs_filtered_out.json` with `reject_reason`.
+1. Test with mechanical-engineer persona and mixed job set.
+2. Confirm software-heavy jobs are rejected with `NO/HIGH`.
+3. Confirm matching mechanical roles pass with `YES/HIGH`.
 
-## Stage 5: Weighted Scoring Model
+## Success Criteria
 
-Score only surviving jobs with explicit evidence per dimension.
-Ranking must compare persona against both job title and job description.
-
-Scoring text policy:
-
-1. Use `title + description` as primary evidence.
-2. Cap description digest to 600 chars for token control.
-3. If description is missing, fallback to `title` only.
-
-### Scoring dimensions
-
-1. Title-role fit: weight `0.25`
-2. Description-persona fit: weight `0.25`
-3. Must-have skill coverage (title + description + snippet): weight `0.20`
-4. Preferred skill coverage: weight `0.10`
-5. Seniority alignment: weight `0.10`
-6. Work mode + location fit: weight `0.05`
-7. Freshness signal: weight `0.05`
-
-### Penalties
-
-- Missing must-have cluster: `-0.15`
-- Overqualified/underqualified strong mismatch: `-0.10`
-- Ambiguous/very short posting data: `-0.05`
-- Missing description (title-only fallback): `-0.05`
-
-### Formula
-
-`final_score = clamp(sum(weight_i * subscore_i) - penalties, 0.0, 1.0)`
-
-Output per job:
-
-- `score_breakdown`
-- `matched_terms`
-- `missing_must_haves`
-- `penalties_applied`
-- `confidence` (`high|medium|low`)
-- `scoring_text_used` (title + description digest, or title-only fallback)
-
-## Stage 6: Decision Bands
-
-Use fixed action bands:
-
-1. `>= 0.80`: strong match, recommended to apply.
-2. `0.65 - 0.79`: review manually.
-3. `< 0.65`: low fit, hide by default.
-
-Allow user override threshold.
-
-## Stage 7: Output Contract
-
-Return ranked results in a structured markdown table plus compact cards.
-
-Required fields:
-
-1. Rank
-2. Title
-3. Company
-4. Location
-5. Final score
-6. Top 3 match reasons
-7. Top 2 mismatch reasons
-8. URL
-
-Persist optional report:
-
-- `profiles/<user_id>/ranked_jobs.md`
-- `profiles/<user_id>/ranked_jobs.json`
-
-## Stage 8: Seen-State Update Strategy
-
-Update `jobs_seen.json` during retrieval, not after ranking.
-
-Policy:
-
-1. Mark discovered unseen jobs immediately per query via `--seen-update`.
-2. This guarantees jobs that did not match well in this run are not re-ranked in the next run.
-3. Keep an optional short re-check list for near-threshold jobs (`0.60 - 0.69`) for 7 days only when explicitly enabled.
-
-Artifact:
-
-- `profiles/<user_id>/jobs_recheck.json` (optional)
-
-## Stage 9: Feedback Learning Loop
-
-Capture user outcomes:
-
-- `applied`
-- `interview`
-- `rejected`
-- `not_relevant`
-
-Persist to:
-
-- `profiles/<user_id>/ranking_feedback.json`
-
-Weekly adaptation:
-
-1. Increase weights on dimensions correlated with `applied/interview`.
-2. Increase penalties tied to repeated `not_relevant` patterns.
-3. Regenerate query buckets from top-performing titles.
-
-## Stage 10: Motivation Integration (Non-Scoring)
-
-`pirate-motivator` remains optional post-output UX:
-
-1. If user got low results count, send motivational audio/text.
-2. Do not use motivation skill outputs as ranking inputs.
-
-## Implementation Plan (Practical)
-
-## Phase 1: Skill Spec Upgrades
-
-1. Update `skills/jobcli-cv-summary/SKILL.md` to emit `Persona Profile v2` + `persona_profile.json`.
-2. Update `skills/jobcli-job-search/SKILL.md` for staged retrieval + immediate seen update (`--seen-update`).
-
-## Phase 2: Ranking Engine Contract
-
-1. Define scoring schema in markdown + JSON examples.
-2. Add deterministic scoring rules and penalty logic.
-3. Add score evidence requirements in output format.
-
-## Phase 3: Feedback and Calibration
-
-1. Add feedback file contract.
-2. Add weekly tuning heuristics.
-3. Add quality metrics report.
-
-## Success Metrics
-
-Measure per user over rolling 2 weeks:
-
-1. Precision@10 (target: +30% from current baseline).
-2. User "relevant" rate on top 20 (target: >= 70%).
-3. False-positive rate in top 10 (target: <= 20%).
-4. Median manual review time per run (target: -25%).
-
-## Risk Controls
-
-1. If job descriptions are sparse, lower confidence and push to manual band.
-2. Keep rule-based fallback if structured persona JSON is missing.
-3. Keep all ranking decisions explainable with reasons and penalties.
-
-## Immediate Next Actions
-
-1. Align both skills on the new `Persona Profile v2` contract.
-2. Implement immediate `seen` update semantics in the job-search skill.
-3. Introduce score breakdown + confidence in ranked output.
-4. Start collecting feedback labels for calibration.
+1. Zero ranked-score output in job-search skill.
+2. Binary decision per job (`YES/NO`) with confidence label.
+3. Significant drop in cross-domain false positives (mechanical persona receiving software jobs).
+4. Agent workflow stays simple: retrieve -> hard reject -> subagent gate -> output.
