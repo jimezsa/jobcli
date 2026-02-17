@@ -176,7 +176,7 @@ def main() -> int:
     parser.add_argument("--api-key", default=DEFAULT_API_KEY, help="LLM API key (default: MINIMAX_API_KEY, fallback: ANTHROPIC_API_KEY/OPENAI_API_KEY)")
     parser.add_argument("--model", default=DEFAULT_MODEL, help=f"Model name (default: {DEFAULT_MODEL})")
     parser.add_argument("--api-url", default=DEFAULT_API_URL, help=f"API URL (default: {DEFAULT_API_URL})")
-    parser.add_argument("--timeout", type=int, default=60, help="HTTP timeout seconds")
+    parser.add_argument("--timeout", type=int, default=120, help="HTTP timeout seconds")
     parser.add_argument("--max-jobs", type=int, default=0, help="Optional limit for processed jobs (0 = all)")
     args = parser.parse_args()
 
