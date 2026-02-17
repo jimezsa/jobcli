@@ -60,32 +60,34 @@ Create `profiles/<user_id>/CVSUMMARY.md` with this structure:
 # Persona Summary
 
 ## Target Roles
-- Mechanical Design Engineer
-- Product Development Engineer
+- <role_family_or_title_1>
+- <role_family_or_title_2>
 
 ## Excluded Roles/Domains
-- Software Engineer
-- Frontend Developer
+- <excluded_role_or_domain_1>
+- <excluded_role_or_domain_2>
 
 ## Seniority Target
-- Mid-Senior
+- <Junior|Mid|Mid-Senior|Senior|Staff+>
 
 ## Must-Have Skills
-- CAD
-- SolidWorks
-- DFM
+- <must_have_skill_1>
+- <must_have_skill_2>
 
 ## Preferred Skills
-- FEA
-- GD&T
+- <preferred_skill_1>
+- <preferred_skill_2>
 
 ## Work Mode
-- Remote
-- Hybrid
+- <Remote|Hybrid|Onsite|Flexible>
 
 ## Location Constraints
-- United States
-- Mexico
+- <location_constraint_1>
+- <location_constraint_2>
+
+## Language Requirements
+- <language_requirement_1>
+- <language_requirement_2>
 ```
 
 Rules:
@@ -104,14 +106,14 @@ Create `profiles/<user_id>/persona_profile.json` with the same semantic fields:
   "user_id": "<user_id>",
   "default_location": "<value-or-Unknown>",
   "default_country_code": "<value-or-Unknown>",
-  "target_roles": ["Mechanical Design Engineer", "Product Development Engineer"],
-  "excluded_roles_or_domains": ["Software Engineer", "Frontend Developer"],
-  "seniority_target": "Mid-Senior",
-  "must_have_skills": ["CAD", "SolidWorks", "DFM"],
-  "preferred_skills": ["FEA", "GD&T"],
-  "work_mode": "Remote",
-  "location_constraints": ["US", "Mexico"],
-  "language_requirements": ["English (Fluent)"]
+  "target_roles": ["<role_family_or_title_1>", "<role_family_or_title_2>"],
+  "excluded_roles_or_domains": ["<excluded_role_or_domain_1>", "<excluded_role_or_domain_2>"],
+  "seniority_target": "<Junior|Mid|Mid-Senior|Senior|Staff+>",
+  "must_have_skills": ["<must_have_skill_1>", "<must_have_skill_2>"],
+  "preferred_skills": ["<preferred_skill_1>", "<preferred_skill_2>"],
+  "work_mode": "<Remote|Hybrid|Onsite|Flexible>",
+  "location_constraints": ["<location_constraint_1>", "<location_constraint_2>"],
+  "language_requirements": ["<language_requirement_1>", "<language_requirement_2>"]
 }
 ```
 
