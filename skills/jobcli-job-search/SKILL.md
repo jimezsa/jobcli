@@ -86,9 +86,9 @@ Use persona role titles to build up to 12 queries:
 Run sequentially per query:
 
 ```bash
-jobcli search "<query>" --location "<location>" --country "<code>" --limit 30 \
+jobcli search "<query>" --location "<location>" --country "<code>" --limit 20 \
   --seen profiles/<user_id>/jobs_seen.json --new-only --seen-update \
-  --json --output profiles/<user_id>/jobs_new_keyword_<n>.json --hours 72
+  --json --output profiles/<user_id>/jobs_new_keyword_<n>.json --hours 48
 ```
 
 Rules:
