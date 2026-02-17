@@ -37,7 +37,7 @@ Goal: eliminate ranking and keep only high-confidence persona matches (`YES/HIGH
 Prerequisites:
 
 - `profiles/<user_id>/CVSUMMARY.md`
-- script: `skills/jobcli-job-search/scripts/persona_job_gate.py`
+- script: `skills/jobcli-job-search/scripts/job_discriminator.py`
 - `OPENAI_API_KEY` set in environment (or pass `--api-key`)
 
 Trigger: user asks for job search and filtering (no ranking).
@@ -129,7 +129,7 @@ Persist hard rejects:
 Evaluate all jobs from the aggregate JSON recursively (one LLM context per job):
 
 ```bash
-python3 skills/jobcli-job-search/scripts/persona_job_gate.py \
+python3 skills/jobcli-job-search/scripts/job_discriminator.py \
   --cvsummary profiles/<user_id>/CVSUMMARY.md \
   --jobs-json profiles/<user_id>/jobs_new_all.json \
   --output profiles/<user_id>/jobs_yes_high.json

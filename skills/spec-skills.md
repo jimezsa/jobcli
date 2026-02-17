@@ -69,12 +69,12 @@ For each surviving job, call a Python script with one job at a time.
 
 Proposed script path:
 
-- `skills/jobcli-job-search/scripts/persona_job_gate.py`
+- `skills/jobcli-job-search/scripts/job_discriminator.py`
 
 Invocation style (example):
 
 ```bash
-python3 skills/jobcli-job-search/scripts/persona_job_gate.py \
+python3 skills/jobcli-job-search/scripts/job_discriminator.py \
   --persona profiles/<user_id>/persona_summary.md \
   --job-json /tmp/job_<id>.json
 ```
@@ -126,7 +126,7 @@ Keep `--seen-update` during retrieval so processed jobs do not come back next ru
 
 ## Phase 2: Python Subagent Script
 
-1. Add `skills/jobcli-job-search/scripts/persona_job_gate.py`.
+1. Add `skills/jobcli-job-search/scripts/job_discriminator.py`.
 2. Accept persona summary + single job JSON input.
 3. Return strict JSON only.
 4. Add guardrails for domain mismatch (mechanical vs software false positives).
