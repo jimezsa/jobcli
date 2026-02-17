@@ -155,17 +155,20 @@ Store rejects with reasons in:
 Score keywords against job TITLE only. This is the primary filter.
 
 - Match each persona keyword against job title (case-insensitive)
-- Count matches
-- title_score = matches / total_keywords
-- **If title_score = 0, reject job (no title match = not relevant)**
-- Keep candidates with title_score > 0 for Stage 2
+- **If ANY keyword matches title → title_score = 1.0 (pass)**
+- **If NO keyword matches title → title_score = 0.0 (reject)**
+- Keep candidates with title_score = 1.0 for Stage 2
 
 ### Stage 2: Description Score (Selective)
-For Stage 1 candidates, score against full job description.
+For Stage 1 candidates (title matched), score against full job description.
 
 Weighing:
-1. title fit: `0.60`
-2. description fit: `0.40`
+1. title match: `0.60` (already binary: 0 or 1)
+2. description relevance: `0.40`
+
+Description scoring:
+- Check if description contains any persona keywords/skills
+- description_score = 1.0 if good match, 0.5 if partial, 0.0 if none
 
 Penalties:
 - missing description: `-0.10`
@@ -177,8 +180,8 @@ Formula:
 `final_score = clamp((0.60 * title_score) + (0.40 * desc_score) - penalties, 0.0, 1.0)`
 
 For each job capture:
-- `stage1_title_matches`
-- `title_score`
+- `stage1_title_matches` (true/false)
+- `title_score` (1.0 or 0.0)
 - `description_score`
 - `final_score`
 - `matched_terms`
