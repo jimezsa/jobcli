@@ -159,40 +159,30 @@ Score keywords against job TITLE only. This is the primary filter.
 - **If NO keyword matches title → title_score = 0.0 (reject)**
 - Keep candidates with title_score = 1.0 for Stage 2
 
-### Stage 2: Description + Domain Score (Selective)
-For Stage 1 candidates (title matched), score against full job description AND check domain.
+### Stage 2: Description Score (Selective)
+For Stage 1 candidates (title matched), score against full job description.
 
-**Weighing:**
-1. title match: `0.40` (binary: 0 or 1)
-2. description relevance: `0.30`
-3. domain fit: `0.30`
+Weighing:
+1. title match: `0.60` (already binary: 0 or 1)
+2. description relevance: `0.40`
 
-**Description scoring:**
-- Check if description contains persona skills/keywords
+Description scoring:
+- Check if description contains any persona keywords/skills
 - description_score = 1.0 if good match, 0.5 if partial, 0.0 if none
 
-**Domain scoring:**
-- Load `preferred_domains` and `excluded_domains` from persona
-- If job title/description contains ANY excluded_domain → domain_score = 0.0 (strong penalty)
-- If job contains preferred_domain → domain_score += 0.5
-- domain_score = clamp(0.0 to 1.0)
-
-**Penalties:**
-- excluded domain match: `-0.50` (major penalty)
+Penalties:
 - missing description: `-0.10`
 - sparse posting: `-0.05`
 
 **Threshold: >= 0.80** (only jobs meeting this are sent to user)
 
 Formula:
-`final_score = clamp((0.40 * title_score) + (0.30 * desc_score) + (0.30 * domain_score) - penalties, 0.0, 1.0)`
+`final_score = clamp((0.60 * title_score) + (0.40 * desc_score) - penalties, 0.0, 1.0)`
 
 For each job capture:
 - `stage1_title_matches` (true/false)
 - `title_score` (1.0 or 0.0)
 - `description_score`
-- `domain_score`
-- `domain_penalty_applied`
 - `final_score`
 - `matched_terms`
 
