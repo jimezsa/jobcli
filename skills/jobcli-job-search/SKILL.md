@@ -35,12 +35,14 @@ metadata:
 Goal: retrieve unseen jobs and keep only jobs classified as `YES` + `HIGH`.
 
 ## Prerequisites
+
 - `profiles/<user_id>/CVSUMMARY.md`
 - optional: `profiles/<user_id>/persona_profile.json`
 - script: `skills/jobcli-job-search/scripts/job_discriminator.py`
 - API key: `MINIMAX_API_KEY` (fallbacks supported by script)
 
 ## Required User-Scoped Files
+
 - `profiles/<user_id>/CVSUMMARY.md`
 - `profiles/<user_id>/jobs_seen.json`
 - `profiles/<user_id>/jobs_new_keyword_<n>.json` (temp)
@@ -51,6 +53,7 @@ Goal: retrieve unseen jobs and keep only jobs classified as `YES` + `HIGH`.
 Never mix files across users.
 
 ## Minimal Flow
+
 1. Load `CVSUMMARY.md` (required). If missing, run `jobcli-cv-summary` first.
 2. Build search queries from persona role targets.
 3. Retrieve unseen jobs per query with seen tracking:
@@ -76,6 +79,7 @@ python3 skills/jobcli-job-search/scripts/job_discriminator.py \
 8. Remove temp files (`jobs_new_keyword_*.json`, `jobs_new_all.json`).
 
 ## Non-Negotiable Rules
+
 1. No ranking and no score-based ordering.
 2. One LLM context per job.
 3. Keep only `decision=YES` and `confidence=HIGH`.
@@ -83,19 +87,22 @@ python3 skills/jobcli-job-search/scripts/job_discriminator.py \
 5. Keep `--seen-update` enabled so processed jobs do not repeat.
 
 ## Output Format
-Show accepted jobs only:
+
+send only accepted jobs to <user_id>:
+
 ```text
-[user_id]
-job_title
-location
-company
-url
+💼 Role: job_title
+🏢 Company: company
+📍 Location: location
+🔗 Apply: url
 ```
 
 If no accepted jobs: report count `0`.
 
 ## Validation
+
 Per user, confirm:
+
 1. `jobs_yes_high.json` exists.
 2. `jobs_yes_high.json` contains only accepted jobs.
 3. `jobs_seen.json` was updated.
