@@ -184,52 +184,37 @@ For each job capture:
 - `confidence` (`high|medium|low`)
 - `scoring_text_used` (title + description digest, or title-only fallback)
 
-## 8) Ranking Bands and Output
+## 8) Output
 
-Bands:
+Sort by score descending.
 
-1. `>= 0.80`: strong match
-2. `0.8 - 0.79`: manual review
-3. `< 0.8`: low fit (hide by default)
+- default threshold: `>= 0.8`
+- allow custom threshold or all jobs
+- send one job per message
 
-Sort by score descending and output top 15 by default.
+Format:
 
-Output format per job:
+```text
+[user_id]
+🥇 job_title_here
+📍 Location
+🏢 Company_name
+⭐ Score: 0.00
 
-- rank
-- title
-- company
-- location
-- final score
-- top 3 match reasons
-- top 2 mismatch reasons
-- URL
+full_url_link_here
+```
+
+Use `🥈` for rank 2, `🥉` for rank 3, and `N.` for rank 4+.
+Do not persist ranked output unless user explicitly asks to keep
+`profiles/<user_id>/ranked_jobs.md`.
+After results, send one short funny motivational line.
 
 Persist outputs only if user requests:
 
 - `profiles/<user_id>/ranked_jobs.md`
 - `profiles/<user_id>/ranked_jobs.json`
 
-## 9) Feedback Loop (Optional but Recommended)
-
-Capture user labels:
-
-- `applied`
-- `interview`
-- `rejected`
-- `not_relevant`
-
-Persist labels to:
-
-- `profiles/<user_id>/ranking_feedback.json`
-
-Weekly tuning:
-
-1. increase weights correlated with `applied/interview`
-2. increase penalties on repeated `not_relevant` patterns
-3. refresh high-performing query variants
-
-## 10) Cleanup
+## 9) Cleanup
 
 Delete temporary artifacts:
 
