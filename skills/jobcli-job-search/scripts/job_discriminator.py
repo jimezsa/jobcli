@@ -80,30 +80,27 @@ def parse_decision(content: str) -> Dict[str, str]:
         start = content.find("{")
         end = content.rfind("}")
         if start == -1 or end == -1 or end <= start:
-            return {"decision": "NO", "confidence": "LOW", "reason": "invalid_json_response"}
+            return {"decision": "NO", "confidence": "LOW"}
         try:
             data = json.loads(content[start : end + 1])
         except json.JSONDecodeError:
-            return {"decision": "NO", "confidence": "LOW", "reason": "invalid_json_response"}
+            return {"decision": "NO", "confidence": "LOW"}
 
     decision = str(data.get("decision", "NO")).strip().upper()
     confidence = str(data.get("confidence", "LOW")).strip().upper()
-    reason = str(data.get("reason", "")).strip()
 
     if decision not in {"YES", "NO"}:
         decision = "NO"
     if confidence not in {"HIGH", "LOW"}:
         confidence = "LOW"
-    if not reason:
-        reason = "no_reason_provided"
 
-    return {"decision": decision, "confidence": confidence, "reason": reason}
+    return {"decision": decision, "confidence": confidence}
 
 
 def llm_compare(cvsummary: str, job: Dict[str, Any], api_key: str, model: str, api_url: str, timeout: int) -> Dict[str, str]:
     system_prompt = (
         "You are a strict job filter. Compare one candidate CV summary and one job. "
-        "Return JSON only with keys: decision, confidence, reason. "
+        "Return JSON only with keys: decision, confidence. "
         "Rules: use YES only when clearly aligned. If unsure return NO. "
         "Use HIGH only when very certain; else LOW. Focus on title/domain first, then description."
     )
@@ -112,7 +109,7 @@ def llm_compare(cvsummary: str, job: Dict[str, Any], api_key: str, model: str, a
         f"{cvsummary}\n\n"
         "JOB:\n"
         f"{json.dumps(compact_job(job), ensure_ascii=True)}\n\n"
-        'Return exactly: {"decision":"YES|NO","confidence":"HIGH|LOW","reason":"short reason"}'
+        'Return exactly: {"decision":"YES|NO","confidence":"HIGH|LOW"}'
     )
 
     payload = {
