@@ -64,9 +64,17 @@ jobcli search "<query>" --location "<location>" --country "<code>" --limit 20 \
   --json --output profiles/<user_id>/jobs_new_keyword_<n>.json --hours 48
 ```
 
-4. Aggregate query outputs into `profiles/<user_id>/jobs_new_all.json` and dedupe.
-5. Apply deterministic hard rejects (role/domain mismatch, seniority mismatch, work-mode/location hard mismatch) and write rejects to `profiles/<user_id>/jobs_filtered_out.json`.
-6. Run LLM gate:
+4. Aggregate query outputs into `profiles/<user_id>/jobs_new_all.json` using `jobcli` merge/dedupe:
+
+```bash
+for f in profiles/<user_id>/jobs_new_keyword_*.json; do
+  jobcli seen update \
+    --seen profiles/<user_id>/jobs_new_all.json \
+    --input "$f" \
+    --out profiles/<user_id>/jobs_new_all.json
+done
+```
+5. Apply deterministic hard rejects (role/domain mismatch, seniority mismatch, work-mode/location hard mismatch), write rejects to `profiles/<user_id>/jobs_filtered_out.json`, then run the LLM gate on remaining jobs:
 
 ```bash
 python3 skills/jobcli-job-search/scripts/job_discriminator.py \
@@ -75,8 +83,8 @@ python3 skills/jobcli-job-search/scripts/job_discriminator.py \
   --output profiles/<user_id>/jobs_yes_high.json
 ```
 
-7. Return only jobs from `jobs_yes_high.json`.
-8. Remove temp files (`jobs_new_keyword_*.json`, `jobs_new_all.json`).
+6. Return only jobs from `jobs_yes_high.json`.
+7. Remove temp files (`jobs_new_keyword_*.json`, `jobs_new_all.json`).
 
 ## Non-Negotiable Rules
 
