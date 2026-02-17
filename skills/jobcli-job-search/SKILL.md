@@ -96,13 +96,17 @@ python3 skills/jobcli-job-search/scripts/job_discriminator.py \
 
 ## Output Format
 
-send only accepted jobs to <user_id>:
+send only accepted jobs to <user_id> as an enumerated list:
 
 ```text
-💼 Role: job_title
-🏢 Company: company
-📍 Location: location
-🔗 Apply: url
+1. 💼 Role: job_title
+   🏢 Company: company
+   📍 Location: location
+   🔗 Apply: url
+2. 💼 Role: job_title
+   🏢 Company: company
+   📍 Location: location
+   🔗 Apply: url
 ```
 
 If no accepted jobs: report count `0`.
