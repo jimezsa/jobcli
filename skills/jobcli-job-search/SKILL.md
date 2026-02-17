@@ -1,6 +1,6 @@
 ---
 name: jobcli-job-search
-description: Search and rank unseen jobs with JobCLI using per-user persona profiles and token-efficient scoring.
+description: Search unseen jobs and filter them with a strict per-job YES/NO persona gate.
 homepage: https://github.com/jimezsa/jobcli
 metadata:
   {
@@ -8,7 +8,7 @@ metadata:
       {
         "emoji": "💼",
         "os": ["linux", "darwin"],
-        "requires": { "bins": ["jobcli"] },
+        "requires": { "bins": ["jobcli", "python3"] },
         "install":
           [
             {
@@ -30,15 +30,17 @@ metadata:
   }
 ---
 
-# JobCLI Job Search + Ranking (v2)
+# JobCLI Job Search + Binary Persona Filter (v3)
 
-Goal: rank unseen jobs with high precision while keeping run-time and token use bounded.
+Goal: eliminate ranking and keep only high-confidence persona matches (`YES/HIGH`) using an LLM gate.
 
 Prerequisites:
 
-- `profiles/<user_id>/persona_profile.json`
+- `profiles/<user_id>/CVSUMMARY.md`
+- script: `skills/jobcli-job-search/scripts/persona_job_gate.py`
+- `OPENAI_API_KEY` set in environment (or pass `--api-key`)
 
-Trigger: user asks for job search/ranking for one or more users.
+Trigger: user asks for job search and filtering (no ranking).
 
 ## 0) Multi-User Isolation (Required)
 
@@ -49,58 +51,39 @@ Inputs:
 
 User-scoped files only:
 
-- persona JSON: `profiles/<user_id>/persona_profile.json`
+- CV summary: `profiles/<user_id>/CVSUMMARY.md`
+- persona JSON (optional): `profiles/<user_id>/persona_profile.json`
 - seen state: `profiles/<user_id>/jobs_seen.json` (persistent)
 - per-query temp: `profiles/<user_id>/jobs_new_keyword_<n>.json`
 - aggregate temp: `profiles/<user_id>/jobs_new_all.json`
-- optional filtered-out: `profiles/<user_id>/jobs_filtered_out.json`
-- optional ranked: `profiles/<user_id>/ranked_jobs.md`, `profiles/<user_id>/ranked_jobs.json`
-- optional feedback: `profiles/<user_id>/ranking_feedback.json`
-- optional recheck: `profiles/<user_id>/jobs_recheck.json`
+- hard rejects: `profiles/<user_id>/jobs_filtered_out.json`
+- subagent keepers: `profiles/<user_id>/jobs_yes_high.json`
 
 Never cross user paths.
 
 ## 1) Persona Input Priority
 
-Load persona from `profiles/<user_id>/persona_profile.json` only.
-If missing required persona data, stop and ask to run `jobcli-cv-summary` first.
+Load in this order:
+
+1. `profiles/<user_id>/CVSUMMARY.md` (required)
+2. `profiles/<user_id>/persona_profile.json` (optional helper)
+
+If `CVSUMMARY.md` is missing, stop and ask to run `jobcli-cv-summary` first.
 
 Resolve location/country:
 
-1. use values in persona files
+1. values from persona files
 2. fallback to explicit user input
 
-## 2) Token-Efficiency Guardrails (Mandatory)
+## 2) Query Plan + Retrieval
 
-1. Parse persona once per user and cache normalized fields.
-2. Query budget: max 12 queries per user per run.
-3. Retrieval budget: max 30 jobs/query.
-4. Deep-scoring budget: max 120 deduped jobs.
-5. Evidence text budget per job:
-   - always score against `title` + `description` when description exists
-   - include description digest capped to 600 chars
-   - if description is missing, score against `title` only
-6. Output budget:
-   - default top 15 ranked jobs
-   - reasons limited to 3 match + 2 mismatch, each <= 12 words
-
-## 3) Query Plan (Per User)
-
-Build up to 12 queries from persona/keyword bank:
+Use persona role titles to build up to 12 queries:
 
 1. core role titles: 4-5
 2. skill-intent titles: 3-4
 3. domain/seniority variants: 3-4
 
-De-duplicate semantically similar queries.
-Use only realistic job-position titles (no skill-only/tool-only queries).
-Write query list to:
-
-- `profiles/<user_id>/queries_v2.json`
-
-## 4) Retrieval (Sequential, Seen Updated Immediately)
-
-For each query run:
+Run sequentially per query:
 
 ```bash
 jobcli search "<query>" --location "<location>" --country "<code>" --limit 30 \
@@ -108,115 +91,97 @@ jobcli search "<query>" --location "<location>" --country "<code>" --limit 30 \
   --json --output profiles/<user_id>/jobs_new_keyword_<n>.json --hours 72
 ```
 
-If total new jobs are very low, rerun remaining queries with `--hours 96`.
-
 Rules:
 
-- run sequentially (lower rate-limit risk)
-- on 403/429 or empty output: skip and continue
-- `--seen-update` stays enabled so low-fit jobs are not re-ranked next run
+1. keep `--seen-update` enabled
+2. continue on per-query errors or zero results
+3. if very low volume, retry remaining queries with `--hours 96`
 
-## 5) Aggregate + Normalize
+## 3) Aggregate + Normalize
 
-For each per-query file:
+Aggregate query files into:
 
-```bash
-jobcli seen update --seen profiles/<user_id>/jobs_new_all.json \
-  --input profiles/<user_id>/jobs_new_keyword_<n>.json \
-  --out profiles/<user_id>/jobs_new_all.json --stats
-```
+- `profiles/<user_id>/jobs_new_all.json`
 
-Then normalize:
+Normalize:
 
 1. canonicalize URL
-2. normalize comparable text (trim/lowercase for matching keys)
+2. trim/lower comparable fields
 3. dedupe by URL, fallback `(title, company, location)`
-4. lightweight lexical pre-rank and keep top 120 for deep scoring
 
-If aggregate is empty, report "no new jobs found" and stop for that user.
+If empty, report no new jobs and stop for that user.
 
-## 6) Hard Constraint Filter (Pre-Rank)
+## 4) Deterministic Hard Reject (Before Subagent)
 
-Reject jobs that violate non-negotiables:
+Reject obvious mismatches before running the per-job gate:
 
-1. severe seniority mismatch
-2. work-mode mismatch (for example onsite-only vs remote-only persona)
-3. location outside allowed constraints
-4. language mismatch when explicit language requirement exists
-5. excluded area/role family
+1. excluded role/domain keyword in title
+2. severe seniority mismatch in title
+3. work-mode hard mismatch (for example remote-only persona vs onsite-only job)
+4. explicit location mismatch
 
-Store rejects with reasons in:
+Persist hard rejects:
 
 - `profiles/<user_id>/jobs_filtered_out.json`
 
-## 7) Two-Stage Scoring (0.0-1.0)
+## 5) LLM Gate (Recursive Jobs JSON)
 
-### Stage 1: Title Filter (Fast)
-Score keywords against job TITLE only. This is the primary filter.
+Evaluate all jobs from the aggregate JSON recursively (one LLM context per job):
 
-- Match each persona keyword against job title (case-insensitive)
-- **If ANY keyword matches title → title_score = 1.0 (pass)**
-- **If NO keyword matches title → title_score = 0.0 (reject)**
-- Keep candidates with title_score = 1.0 for Stage 2
+```bash
+python3 skills/jobcli-job-search/scripts/persona_job_gate.py \
+  --cvsummary profiles/<user_id>/CVSUMMARY.md \
+  --jobs-json profiles/<user_id>/jobs_new_all.json \
+  --output profiles/<user_id>/jobs_yes_high.json
+```
 
-### Stage 2: Description Score (Selective)
-For Stage 1 candidates (title matched), score against full job description.
+Script behavior:
 
-Weighing:
-1. title match: `0.60` (already binary: 0 or 1)
-2. description relevance: `0.40`
+1. recursively finds job objects in JSON
+2. calls LLM once per job (`CVSUMMARY.md` + job context)
+3. keeps only `YES` + `HIGH` decisions
+4. writes a JSON list of original job objects to `--output`
 
-Description scoring:
-- Check if description contains any persona keywords/skills
-- description_score = 1.0 if good match, 0.5 if partial, 0.0 if none
+Rules:
 
-Penalties:
-- missing description: `-0.10`
-- sparse posting: `-0.05`
+1. one context per job (no multi-job prompt)
+2. compare title/domain first, then description
+3. if unsure, return `NO`
+4. if uncertain, return `NO` (do not allow ambiguous yes)
 
-**Threshold: >= 0.80** (only jobs meeting this are sent to user)
+## 6) Final Decision Policy (No Ranking)
 
-Formula:
-`final_score = clamp((0.60 * title_score) + (0.40 * desc_score) - penalties, 0.0, 1.0)`
+Only keep:
 
-For each job capture:
-- `stage1_title_matches` (true/false)
-- `title_score` (1.0 or 0.0)
-- `description_score`
-- `final_score`
-- `matched_terms`
+- `decision = YES`
+- `confidence = HIGH`
 
-## 8) Output
+Everything else goes to reject bucket.
 
-Sort by score descending.
+Persist:
 
-- **threshold: `>= 0.80`** (only jobs meeting this pass)
-- If no jobs pass threshold, report count = 0
-- send one job per message
+- `profiles/<user_id>/jobs_yes_high.json`
 
-Format:
+Output order is retrieval order or newest-first only.  
+Do not compute or display score/rank.
+
+## 7) Output to User
+
+Show only `YES/HIGH` jobs, one item per message:
 
 ```text
 [user_id]
-🥇 job_title_here
-📍 Location
-🏢 Company_name
-⭐ Score: 0.00
-
+job_title_here
+Location
+Company_name
 full_url_link_here
 ```
 
-Use `🥈` for rank 2, `🥉` for rank 3, and `N.` for rank 4+.
-Do not persist ranked output unless user explicitly asks to keep
-`profiles/<user_id>/ranked_jobs.md`.
-After results, send one short funny motivational line.
+If no `YES/HIGH` jobs, report count = 0.
 
-Persist outputs only if user requests:
+## 8) Seen-State and Cleanup
 
-- `profiles/<user_id>/ranked_jobs.md`
-- `profiles/<user_id>/ranked_jobs.json`
-
-## 9) Cleanup
+Because retrieval uses `--seen-update`, both accepted and rejected jobs are already tracked and should not reappear next run.
 
 Delete temporary artifacts:
 
@@ -225,16 +190,14 @@ Delete temporary artifacts:
 
 Keep persistent artifacts:
 
-- `profiles/<user_id>/persona_profile.json`
+- `profiles/<user_id>/CVSUMMARY.md`
+- `profiles/<user_id>/persona_profile.json` (if present)
 - `profiles/<user_id>/jobs_seen.json`
-- `profiles/<user_id>/ranking_feedback.json` (if used)
-- `profiles/<user_id>/jobs_recheck.json` (if used)
-
-In batch mode, process users sequentially end-to-end.
+- `profiles/<user_id>/jobs_filtered_out.json`
+- `profiles/<user_id>/jobs_yes_high.json`
 
 ## Notes
 
-- privacy first: never expose personal data
-- if rate-limited often, suggest lower query count, lower `--limit`, or proxies
-- keep outputs concise; avoid verbose scoring narratives
-- if using `skills/pirate-motivator/SKILL.md`, use it only after ranking is complete
+- never reintroduce weighted ranking in this skill
+- keep persona hard exclusions explicit to prevent cross-domain false positives
+- optional motivation skill can run after filtering only

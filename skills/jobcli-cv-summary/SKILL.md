@@ -1,6 +1,6 @@
 ---
 name: jobcli-cv-summary
-description: Extract per-user machine-readable persona profiles and keyword banks from CV PDFs.
+description: Build persona summary + JSON profile files for strict YES/NO job filtering.
 homepage: https://github.com/jimezsa/jobcli
 metadata:
   {
@@ -14,9 +14,9 @@ metadata:
   }
 ---
 
-# CV Persona Builder (JSON-only)
+# CV Persona Builder (Summary + JSON)
 
-Goal: produce one machine-readable persona JSON per user from CV PDFs.
+Goal: produce a concise `CVSUMMARY.md` that can drive binary job filtering.
 
 Trigger: the user provides one or more `.pdf` CV files.
 
@@ -29,74 +29,89 @@ Per CV, collect:
 - `default_location`: optional
 - `default_country_code`: optional ISO-3166-1 alpha-2
 
-## 1) Output Contract (Only JSON)
+## 1) Output Contract (Required)
 
-Write only these files:
+Write these files per user:
 
 - `profiles/<user_id>/resume.pdf`
+- `profiles/<user_id>/CVSUMMARY.md`
 - `profiles/<user_id>/persona_profile.json`
 
-Do not generate `CVSUMMARY.md`.
+`CVSUMMARY.md` is the primary input for `jobcli-job-search`.
 
 ## 2) Extract and Normalize Persona
 
 From CV text, extract:
 
-- `seniority_target`: Junior | Mid | Mid-Senior | Senior | Staff+
-- `role_family`: array
-- `must_have_skills`: array, max 12
-- `preferred_skills`: array, max 15
-- `excluded_areas`: array
-- `work_mode`: Remote | Hybrid | Onsite | Flexible
-- `location_constraints`: array
-- `language_requirements`: array
+1. `target_roles` (allowed role families/titles)
+2. `excluded_roles_or_domains` (explicit negatives)
+3. `seniority_target`: Junior | Mid | Mid-Senior | Senior | Staff+
+4. `must_have_skills`: array, max 12
+5. `preferred_skills`: array, max 15
+6. `work_mode`: Remote | Hybrid | Onsite | Flexible
+7. `location_constraints`: array
+8. `language_requirements`: array
 
-## 3) Generate Keywords
+## 3) Write Persona Summary Markdown
 
-Generate exactly 20 realistic job-position titles (2-5 words each):
+Create `profiles/<user_id>/CVSUMMARY.md` with this structure:
 
-- 10 English
-- 10 original language (or English variants if primary language is English)
+```md
+# Persona Summary
 
-Also produce bucketed query sets:
+## Target Roles
+- Mechanical Design Engineer
+- Product Development Engineer
 
-- `core_role`
-- `skill_intent`
-- `domain_seniority`
+## Excluded Roles/Domains
+- Software Engineer
+- Frontend Developer
 
-Token rules:
+## Seniority Target
+- Mid-Senior
 
-- remove generic low-intent terms
-- de-duplicate semantic equivalents
-- use market-standard position titles only
-- do not use skill-only/tool-only phrases (for example `Python`, `Kubernetes`)
+## Must-Have Skills
+- CAD
+- SolidWorks
+- DFM
 
-## 4) Save JSON
+## Preferred Skills
+- FEA
+- GD&T
 
-Create `profiles/<user_id>/persona_profile.json`:
+## Work Mode
+- Remote
+- Hybrid
 
-```json
+## Location Constraints
+- United States
+- Mexico
+```
+
+Rules:
+
+1. Keep it short and explicit.
+2. Include hard exclusions to prevent wrong-domain matches.
+3. Use bullet lists only for machine-friendly parsing.
+4. No personal identifiers.
+
+## 4) Save JSON Companion
+
+Create `profiles/<user_id>/persona_profile.json` with the same semantic fields:
+
+```jsonc
 {
   "user_id": "<user_id>",
   "default_location": "<value-or-Unknown>",
   "default_country_code": "<value-or-Unknown>",
+  "target_roles": ["Mechanical Design Engineer", "Product Development Engineer"],
+  "excluded_roles_or_domains": ["Software Engineer", "Frontend Developer"],
   "seniority_target": "Mid-Senior",
-  "role_family": ["Backend", "Platform"],
-  "must_have_skills": ["Go", "SQL", "APIs", "Docker"],
-  "preferred_skills": ["Kubernetes", "AWS", "Terraform"],
-  "excluded_areas": ["Frontend-only", "QA-only"],
+  "must_have_skills": ["CAD", "SolidWorks", "DFM"],
+  "preferred_skills": ["FEA", "GD&T"],
   "work_mode": "Remote",
-  "location_constraints": ["US", "Canada"],
-  "language_requirements": ["English (Fluent)"],
-  "keywords": {
-    "english": ["...10 items..."],
-    "original_language": ["...10 items..."],
-    "bucketed": {
-      "core_role": ["..."],
-      "skill_intent": ["..."],
-      "domain_seniority": ["..."]
-    }
-  }
+  "location_constraints": ["US", "Mexico"],
+  "language_requirements": ["English (Fluent)"]
 }
 ```
 
@@ -113,8 +128,10 @@ Never include:
 Confirm per user:
 
 1. `profiles/<user_id>/resume.pdf` exists
-2. `profiles/<user_id>/persona_profile.json` exists
-3. JSON schema fields are present
+2. `profiles/<user_id>/CVSUMMARY.md` exists
+3. `profiles/<user_id>/persona_profile.json` exists
+4. summary includes target + excluded + seniority + must-have + work-mode + location
+5. JSON schema fields are present
 
 If multiple users were provided, repeat steps 0-6 per user.
 
