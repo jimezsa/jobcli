@@ -149,47 +149,46 @@ Store rejects with reasons in:
 
 - `profiles/<user_id>/jobs_filtered_out.json`
 
-## 7) Weighted Scoring (0.0-1.0)
+## 7) Two-Stage Scoring (0.0-1.0)
 
-Score surviving jobs with explicit breakdown. Ranking must compare persona against
-both job title and job description content.
+### Stage 1: Title Filter (Fast)
+Score keywords against job TITLE only. This is the primary filter.
 
-Weights:
+- Match each persona keyword against job title (case-insensitive)
+- Count matches
+- title_score = matches / total_keywords
+- **If title_score = 0, reject job (no title match = not relevant)**
+- Keep candidates with title_score > 0 for Stage 2
 
-1. title-role fit: `0.25`
-2. description-persona fit: `0.25`
-3. must-have skill coverage (title + description + snippet): `0.20`
-4. preferred skill coverage: `0.10`
-5. seniority alignment: `0.10`
-6. work mode + location fit: `0.05`
-7. freshness signal: `0.05`
+### Stage 2: Description Score (Selective)
+For Stage 1 candidates, score against full job description.
+
+Weighing:
+1. title fit: `0.60`
+2. description fit: `0.40`
 
 Penalties:
+- missing description: `-0.10`
+- sparse posting: `-0.05`
 
-- missing must-have cluster: `-0.15`
-- strong over/under qualification mismatch: `-0.10`
-- sparse or ambiguous posting data: `-0.05`
-- missing description (title-only fallback): `-0.05`
+**Threshold: >= 0.80** (only jobs meeting this are sent to user)
 
 Formula:
-
-`final_score = clamp(sum(weight_i * subscore_i) - penalties, 0.0, 1.0)`
+`final_score = clamp((0.60 * title_score) + (0.40 * desc_score) - penalties, 0.0, 1.0)`
 
 For each job capture:
-
-- `score_breakdown`
+- `stage1_title_matches`
+- `title_score`
+- `description_score`
+- `final_score`
 - `matched_terms`
-- `missing_must_haves`
-- `penalties_applied`
-- `confidence` (`high|medium|low`)
-- `scoring_text_used` (title + description digest, or title-only fallback)
 
 ## 8) Output
 
 Sort by score descending.
 
-- default threshold: `>= 0.8`
-- allow custom threshold or all jobs
+- **threshold: `>= 0.80`** (only jobs meeting this pass)
+- If no jobs pass threshold, report count = 0
 - send one job per message
 
 Format:
