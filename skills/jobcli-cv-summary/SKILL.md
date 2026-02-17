@@ -34,6 +34,8 @@ Write under `profiles/<user_id>/`:
 - `persona_profile.json`
 
 ## Required Persona Fields
+- `keywords_en` (array, exactly 6 realistic job titles in English)
+- `keywords_local` (array, exactly 6 realistic job titles in country language)
 - `target_roles` (array)
 - `excluded_roles_or_domains` (array)
 - `seniority_target` (`Junior|Mid|Mid-Senior|Senior|Staff+`)
@@ -46,6 +48,8 @@ Write under `profiles/<user_id>/`:
 ## CVSUMMARY.md Structure
 Use this exact section layout with bullet lists:
 - `# Persona Summary`
+- `## Keywords (English)`
+- `## Keywords (Local Language)`
 - `## Target Roles`
 - `## Excluded Roles/Domains`
 - `## Seniority Target`
@@ -60,6 +64,8 @@ Include these keys:
 - `user_id`
 - `default_location`
 - `default_country_code`
+- `keywords_en`
+- `keywords_local`
 - `target_roles`
 - `excluded_roles_or_domains`
 - `seniority_target`
@@ -72,13 +78,20 @@ Include these keys:
 ## Rules
 1. Keep content short, explicit, and machine-friendly.
 2. Include hard exclusions to prevent cross-domain matches.
-3. Remove personal identifiers (name, email, phone, address, IDs, employer/school names).
-4. Keep user data isolated under each `profiles/<user_id>/` directory.
+3. `## Keywords (English)` is required in `CVSUMMARY.md` and must contain exactly 6 keywords.
+4. `## Keywords (Local Language)` is required in `CVSUMMARY.md` and must contain exactly 6 keywords in the country language.
+5. Keywords are for job search only: each keyword must be a realistic job title used in job boards.
+6. Do not include skills, tools, technologies, certifications, or generic terms as keywords.
+7. Use one normalized job-title keyword per bullet and avoid duplicates inside each list.
+8. Remove personal identifiers (name, email, phone, address, IDs, employer/school names).
+9. Keep user data isolated under each `profiles/<user_id>/` directory.
 
 ## Validation
 Per user, confirm:
 1. `resume.pdf` exists.
-2. `CVSUMMARY.md` exists and has all required sections.
-3. `persona_profile.json` exists and has all required keys.
+2. `CVSUMMARY.md` exists and includes both required keyword sections.
+3. `CVSUMMARY.md` contains exactly 6 bullets in `## Keywords (English)` and exactly 6 bullets in `## Keywords (Local Language)`.
+4. Every keyword in both sections is a job title phrase (not a skill/tool/certification term).
+5. `persona_profile.json` exists and has all required keys (including `keywords_en` and `keywords_local`).
 
 Next skill: `skills/jobcli-job-search/SKILL.md`.
