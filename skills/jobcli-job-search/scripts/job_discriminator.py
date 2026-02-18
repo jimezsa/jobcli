@@ -118,11 +118,13 @@ def parse_decision(content: str) -> Dict[str, str]:
 
 def llm_compare(cvsummary: str, job: Dict[str, Any], api_key: str, model: str, api_url: str, timeout: int) -> Dict[str, str]:
     system_prompt = (
-        "You are a practical job relevance filter. Compare one candidate CV summary and one job. "
+        "You are a lenient job relevance filter. Compare one candidate CV summary and one job. "
         "Return JSON only with keys: decision, confidence. "
-        "Rules: use YES when there is a reasonable role/domain fit, even if not perfect. "
-        "Use NO for clear mismatches in role/domain/seniority/work mode. "
-        "Use HIGH for strong fit with clear evidence; else LOW. Focus on title/domain first, then description."
+        "Rules: default to YES unless the job is clearly irrelevant. "
+        "Use YES for any overlap in domain, skills, industry, or transferable experience. "
+        "Use NO only for obvious mismatches (e.g. software dev vs. nurse, unrelated industry with zero skill overlap). "
+        "Use HIGH when the fit is strong; use LOW when the fit is partial but plausible. "
+        "When in doubt, choose YES with LOW confidence."
     )
     user_prompt = (
         "CVSUMMARY.md:\n"
@@ -134,7 +136,7 @@ def llm_compare(cvsummary: str, job: Dict[str, Any], api_key: str, model: str, a
 
     payload = {
         "model": model,
-        "max_tokens": 256,
+        "max_tokens": 1024,
         "temperature": 0.1,
         "system": system_prompt,
         "messages": [{"role": "user", "content": [{"type": "text", "text": user_prompt}]}],
@@ -249,6 +251,9 @@ def main() -> int:
         except Exception as exc:  # noqa: BLE001
             print(f"Evaluation error on job {processed}: {exc}", file=sys.stderr)
             continue
+
+        title = first_str(job, TITLE_KEYS)
+        print(f"  -> {title}: {result}", file=sys.stderr)
 
         if is_accepted(result, args.min_confidence):
             yes_jobs.append(job)
