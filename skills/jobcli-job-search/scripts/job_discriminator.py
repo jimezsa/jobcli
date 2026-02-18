@@ -207,11 +207,15 @@ def main() -> int:
     if args.max_jobs > 0:
         jobs = jobs[: args.max_jobs]
 
+    total_jobs = len(jobs)
+    print(f"Total jobs to process: {total_jobs}", file=sys.stderr)
+
     yes_jobs: List[Dict[str, Any]] = []
     processed = 0
 
     for job in jobs:
         processed += 1
+        print(f"Processing job {processed}/{total_jobs}", file=sys.stderr)
         try:
             result = llm_compare(
                 cvsummary=cvsummary_text,
