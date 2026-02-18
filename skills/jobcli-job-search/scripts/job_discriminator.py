@@ -204,7 +204,7 @@ def main() -> int:
     parser.add_argument("--api-url", default=DEFAULT_API_URL, help=f"API URL (default: {DEFAULT_API_URL})")
     parser.add_argument("--timeout", type=int, default=120, help="HTTP timeout seconds")
     parser.add_argument("--max-jobs", type=int, default=0, help="Optional limit for processed jobs (0 = all)")
-    parser.add_argument("--workers", type=int, default=4, help="Number of parallel workers (default: 4)")
+    parser.add_argument("--workers", type=int, default=10, help="Number of parallel workers (default: 4)")
     parser.add_argument(
         "--min-confidence",
         choices=tuple(CONFIDENCE_RANK.keys()),
