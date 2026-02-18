@@ -46,9 +46,9 @@ jobcli search "software engineer" --location "Munich, Germany"  --limit 100 --ho
 # search a single site last 48 hours
 jobcli linkedin "chemical engineer" --location "Munich, Germany"  --limit 10 --hours 48
 
-# output only unseen jobs using a seen-history JSON
+# output only unseen jobs using a seen-history JSON , update seen jobs (jobs_seen.json)
 jobcli search "software engineer" --location "Munich, Germany" --limit 30 --hours 48 \
-  --seen jobs_seen.json --new-only --json --output jobs_new.json
+  --seen jobs_seen.json --seen-update --new-only --json --output jobs_new.json
 
 # update seen-history after reviewing/ranking new jobs
 jobcli seen update --seen jobs_seen.json --input jobs_new.json --out jobs_seen.json --stats
