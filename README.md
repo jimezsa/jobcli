@@ -1,7 +1,5 @@
 # 🧑‍💻 JobCLI - Jobs in your terminal
 
-![GitHub Repo Banner](docs/assets/jobcli.png)
-
 Fast, single-binary job aggregation CLI written in Go. Scrapes multiple sites in parallel and exports results to table, CSV, TSV, JSON, or Markdown.
 
 ![JobCLI Demo](docs/assets/jobcli_x5.gif)
