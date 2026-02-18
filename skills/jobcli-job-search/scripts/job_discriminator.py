@@ -11,6 +11,24 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 
+def load_dotenv(path: Path = Path(".env")) -> None:
+    """Load .env file into os.environ (no-op if file missing)."""
+    if not path.is_file():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        value = value.strip().strip("\"'")
+        if key:
+            os.environ.setdefault(key, value)
+
+
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+load_dotenv(_PROJECT_ROOT / ".env")
+
 DEFAULT_API_KEY = os.environ.get(
     "MINIMAX_API_KEY",
     os.environ.get("ANTHROPIC_API_KEY", os.environ.get("OPENAI_API_KEY", "")),
