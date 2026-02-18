@@ -204,7 +204,7 @@ def main() -> int:
     parser.add_argument("--api-url", default=DEFAULT_API_URL, help=f"API URL (default: {DEFAULT_API_URL})")
     parser.add_argument("--timeout", type=int, default=120, help="HTTP timeout seconds")
     parser.add_argument("--max-jobs", type=int, default=0, help="Optional limit for processed jobs (0 = all)")
-    parser.add_argument("--workers", type=int, default=10, help="Number of parallel workers (default: 4)")
+    parser.add_argument("--workers", type=int, default=0, help="Number of parallel workers (0 = one per job)")
     parser.add_argument(
         "--min-confidence",
         choices=tuple(CONFIDENCE_RANK.keys()),
@@ -230,7 +230,8 @@ def main() -> int:
         jobs = jobs[: args.max_jobs]
 
     total_jobs = len(jobs)
-    print(f"Total jobs to process: {total_jobs} (workers: {args.workers})", file=sys.stderr)
+    num_workers = args.workers if args.workers > 0 else total_jobs
+    print(f"Total jobs to process: {total_jobs} (workers: {num_workers})", file=sys.stderr)
 
     def evaluate(idx_job: Tuple[int, Dict[str, Any]]) -> Tuple[int, Dict[str, Any], Dict[str, str] | None]:
         idx, job = idx_job
@@ -256,7 +257,7 @@ def main() -> int:
     yes_jobs: List[Dict[str, Any]] = []
     processed = 0
 
-    with ThreadPoolExecutor(max_workers=args.workers) as pool:
+    with ThreadPoolExecutor(max_workers=num_workers) as pool:
         futures = {pool.submit(evaluate, (i, job)): i for i, job in enumerate(jobs)}
         for future in as_completed(futures):
             processed += 1
