@@ -23,6 +23,7 @@ DESCRIPTION_KEYS = ("description", "snippet", "summary", "details")
 LOCATION_KEYS = ("location", "city", "region", "country")
 ID_KEYS = ("id", "job_id", "url", "link")
 COMPANY_KEYS = ("company", "company_name", "employer")
+CONFIDENCE_RANK = {"LOW": 0, "HIGH": 1}
 
 
 def read_json(path: Path) -> Any:
@@ -91,7 +92,7 @@ def parse_decision(content: str) -> Dict[str, str]:
 
     if decision not in {"YES", "NO"}:
         decision = "NO"
-    if confidence not in {"HIGH", "LOW"}:
+    if confidence not in CONFIDENCE_RANK:
         confidence = "LOW"
 
     return {"decision": decision, "confidence": confidence}
@@ -99,10 +100,11 @@ def parse_decision(content: str) -> Dict[str, str]:
 
 def llm_compare(cvsummary: str, job: Dict[str, Any], api_key: str, model: str, api_url: str, timeout: int) -> Dict[str, str]:
     system_prompt = (
-        "You are a strict job filter. Compare one candidate CV summary and one job. "
+        "You are a practical job relevance filter. Compare one candidate CV summary and one job. "
         "Return JSON only with keys: decision, confidence. "
-        "Rules: use YES only when clearly aligned. If unsure return NO. "
-        "Use HIGH only when very certain; else LOW. Focus on title/domain first, then description."
+        "Rules: use YES when there is a reasonable role/domain fit, even if not perfect. "
+        "Use NO for clear mismatches in role/domain/seniority/work mode. "
+        "Use HIGH for strong fit with clear evidence; else LOW. Focus on title/domain first, then description."
     )
     user_prompt = (
         "CVSUMMARY.md:\n"
@@ -165,6 +167,12 @@ def llm_compare(cvsummary: str, job: Dict[str, Any], api_key: str, model: str, a
     return parse_decision(content)
 
 
+def is_accepted(result: Dict[str, str], min_confidence: str) -> bool:
+    if result["decision"] != "YES":
+        return False
+    return CONFIDENCE_RANK[result["confidence"]] >= CONFIDENCE_RANK[min_confidence]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Filter jobs with LLM using CVSUMMARY.md.")
     parser.add_argument("--cvsummary", required=True, help="Path to CVSUMMARY.md")
@@ -175,6 +183,13 @@ def main() -> int:
     parser.add_argument("--api-url", default=DEFAULT_API_URL, help=f"API URL (default: {DEFAULT_API_URL})")
     parser.add_argument("--timeout", type=int, default=120, help="HTTP timeout seconds")
     parser.add_argument("--max-jobs", type=int, default=0, help="Optional limit for processed jobs (0 = all)")
+    parser.add_argument(
+        "--min-confidence",
+        choices=tuple(CONFIDENCE_RANK.keys()),
+        default="LOW",
+        type=str.upper,
+        help="Minimum confidence for accepted YES decisions (default: LOW).",
+    )
     args = parser.parse_args()
 
     if not args.api_key:
@@ -213,12 +228,12 @@ def main() -> int:
             print(f"Evaluation error on job {processed}: {exc}", file=sys.stderr)
             continue
 
-        if result["decision"] == "YES" and result["confidence"] == "HIGH":
+        if is_accepted(result, args.min_confidence):
             yes_jobs.append(job)
 
     Path(args.output).write_text(json.dumps(yes_jobs, ensure_ascii=True, indent=2), encoding="utf-8")
     print(f"Processed: {processed}")
-    print(f"YES_HIGH: {len(yes_jobs)}")
+    print(f"ACCEPTED_CONFIDENCE_GTE_{args.min_confidence}: {len(yes_jobs)}")
     print(f"Output: {args.output}")
     return 0
 

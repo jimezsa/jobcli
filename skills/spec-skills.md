@@ -1,7 +1,7 @@
 # JobCLI Skills Spec (Minimal)
 
 ## Purpose
-Define the required contract for the JobCLI skill workflow: build persona files, then run strict YES/HIGH job filtering.
+Define the required contract for the JobCLI skill workflow: build persona files, then run YES job filtering with a configurable confidence threshold.
 
 ## Skills In Scope
 - `skills/jobcli-cv-summary/SKILL.md`
@@ -19,8 +19,8 @@ Define the required contract for the JobCLI skill workflow: build persona files,
 ## Non-Negotiable Rules
 1. No ranking, no score thresholds, no weighted formulas.
 2. LLM decision is binary per job: `YES` or `NO`.
-3. Keep only `YES` with `HIGH` confidence.
-4. If uncertain, return `NO`.
+3. Keep only `YES` with confidence at or above `--min-confidence` (`LOW` by default).
+4. Use `--min-confidence HIGH` for strict-only matches.
 5. Use one isolated LLM context per job.
 6. Never mix files across users.
 
@@ -35,6 +35,7 @@ Define the required contract for the JobCLI skill workflow: build persona files,
 python3 skills/jobcli-job-search/scripts/job_discriminator.py \
   --cvsummary profiles/<user_id>/CVSUMMARY.md \
   --jobs-json profiles/<user_id>/jobs_new_all.json \
+  --min-confidence LOW \
   --output profiles/<user_id>/jobs_yes_high.json
 ```
 

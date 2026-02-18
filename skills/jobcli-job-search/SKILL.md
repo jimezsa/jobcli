@@ -1,6 +1,6 @@
 ---
 name: jobcli-job-search
-description: Search unseen jobs and keep only strict YES/HIGH persona matches.
+description: Search unseen jobs and keep only YES persona matches above a configurable confidence threshold.
 homepage: https://github.com/jimezsa/jobcli
 metadata:
   {
@@ -32,7 +32,7 @@ metadata:
 
 # JobCLI Job Search (Minimal)
 
-Goal: retrieve unseen jobs and keep only jobs classified as `YES` + `HIGH`.
+Goal: retrieve unseen jobs and keep only jobs classified as `YES` with configurable confidence (`LOW` by default).
 
 ## Prerequisites
 
@@ -80,6 +80,7 @@ done
 python3 skills/jobcli-job-search/scripts/job_discriminator.py \
   --cvsummary profiles/<user_id>/CVSUMMARY.md \
   --jobs-json profiles/<user_id>/jobs_new_all.json \
+  --min-confidence LOW \
   --output profiles/<user_id>/jobs_yes_high.json
 ```
 
@@ -90,8 +91,8 @@ python3 skills/jobcli-job-search/scripts/job_discriminator.py \
 
 1. No ranking and no score-based ordering.
 2. One LLM context per job.
-3. Keep only `decision=YES` and `confidence=HIGH`.
-4. If uncertain, return `NO`.
+3. Keep only `decision=YES` and confidence at or above `--min-confidence` (`LOW` by default).
+4. Use `--min-confidence HIGH` if you want strict-only matches.
 5. Keep `--seen-update` enabled so processed jobs do not repeat.
 
 ## Output Format
