@@ -7,6 +7,7 @@ import os
 import sys
 import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -203,6 +204,7 @@ def main() -> int:
     parser.add_argument("--api-url", default=DEFAULT_API_URL, help=f"API URL (default: {DEFAULT_API_URL})")
     parser.add_argument("--timeout", type=int, default=120, help="HTTP timeout seconds")
     parser.add_argument("--max-jobs", type=int, default=0, help="Optional limit for processed jobs (0 = all)")
+    parser.add_argument("--workers", type=int, default=4, help="Number of parallel workers (default: 4)")
     parser.add_argument(
         "--min-confidence",
         choices=tuple(CONFIDENCE_RANK.keys()),
@@ -228,14 +230,10 @@ def main() -> int:
         jobs = jobs[: args.max_jobs]
 
     total_jobs = len(jobs)
-    print(f"Total jobs to process: {total_jobs}", file=sys.stderr)
+    print(f"Total jobs to process: {total_jobs} (workers: {args.workers})", file=sys.stderr)
 
-    yes_jobs: List[Dict[str, Any]] = []
-    processed = 0
-
-    for job in jobs:
-        processed += 1
-        print(f"Processing job {processed}/{total_jobs}", file=sys.stderr)
+    def evaluate(idx_job: Tuple[int, Dict[str, Any]]) -> Tuple[int, Dict[str, Any], Dict[str, str] | None]:
+        idx, job = idx_job
         try:
             result = llm_compare(
                 cvsummary=cvsummary_text,
@@ -245,18 +243,26 @@ def main() -> int:
                 api_url=args.api_url,
                 timeout=args.timeout,
             )
+            title = first_str(job, TITLE_KEYS)
+            print(f"  [{idx + 1}/{total_jobs}] {title}: {result}", file=sys.stderr)
+            return idx, job, result
         except urllib.error.URLError as exc:
-            print(f"Network/API error on job {processed}: {exc}", file=sys.stderr)
-            continue
+            print(f"  [{idx + 1}/{total_jobs}] Network/API error: {exc}", file=sys.stderr)
+            return idx, job, None
         except Exception as exc:  # noqa: BLE001
-            print(f"Evaluation error on job {processed}: {exc}", file=sys.stderr)
-            continue
+            print(f"  [{idx + 1}/{total_jobs}] Evaluation error: {exc}", file=sys.stderr)
+            return idx, job, None
 
-        title = first_str(job, TITLE_KEYS)
-        print(f"  -> {title}: {result}", file=sys.stderr)
+    yes_jobs: List[Dict[str, Any]] = []
+    processed = 0
 
-        if is_accepted(result, args.min_confidence):
-            yes_jobs.append(job)
+    with ThreadPoolExecutor(max_workers=args.workers) as pool:
+        futures = {pool.submit(evaluate, (i, job)): i for i, job in enumerate(jobs)}
+        for future in as_completed(futures):
+            processed += 1
+            _, job, result = future.result()
+            if result is not None and is_accepted(result, args.min_confidence):
+                yes_jobs.append(job)
 
     Path(args.output).write_text(json.dumps(yes_jobs, ensure_ascii=True, indent=2), encoding="utf-8")
     print(f"Processed: {processed}")
