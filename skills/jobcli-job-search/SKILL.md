@@ -74,6 +74,7 @@ for f in profiles/<user_id>/jobs_new_keyword_*.json; do
     --out profiles/<user_id>/jobs_new_all.json
 done
 ```
+
 5. Apply deterministic hard rejects (role/domain mismatch, seniority mismatch, work-mode/location hard mismatch), write rejects to `profiles/<user_id>/jobs_filtered_out.json`, then run the LLM gate on remaining jobs:
 
 ```bash
@@ -81,10 +82,10 @@ python3 skills/jobcli-job-search/scripts/job_discriminator.py \
   --cvsummary profiles/<user_id>/CVSUMMARY.md \
   --jobs-json profiles/<user_id>/jobs_new_all.json \
   --min-confidence LOW \
-  --output profiles/<user_id>/jobs_yes_high.json
+  --output profiles/<user_id>/filtered_jobs.json
 ```
 
-6. Return only jobs from `jobs_yes_high.json`.
+6. Return only jobs from `filtered_jobs.json`.
 7. Remove temp files (`jobs_new_keyword_*.json`, `jobs_new_all.json`).
 
 ## Non-Negotiable Rules
@@ -92,8 +93,7 @@ python3 skills/jobcli-job-search/scripts/job_discriminator.py \
 1. No ranking and no score-based ordering.
 2. One LLM context per job.
 3. Keep only `decision=YES` and confidence at or above `--min-confidence` (`LOW` by default).
-4. Use `--min-confidence HIGH` if you want strict-only matches.
-5. Keep `--seen-update` enabled so processed jobs do not repeat.
+4. Keep `--seen-update` enabled so processed jobs do not repeat.
 
 ## Output Format
 
