@@ -78,6 +78,15 @@ Include these keys:
 ## Rules
 1. Keep content short, explicit, and machine-friendly.
 2. Include hard exclusions to prevent cross-domain matches.
+3. **Always include these default exclusions** for non-student users:
+   - Werkstudent
+   - Intern
+   - Internship
+   - Praktikant
+   - Student Assistant
+   - Working Student
+   - HiWi
+   Add these to `excluded_roles_or_domains` unless user explicitly wants student positions.
 3. `## Keywords (English)` is required in `CVSUMMARY.md` and must contain exactly 6 keywords.
 4. `## Keywords (Local Language)` is required in `CVSUMMARY.md` and must contain exactly 6 keywords in the country language.
 5. Keywords are for job search only: each keyword must be a realistic job title used in job boards.
