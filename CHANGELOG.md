@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.1] - 2026-02-21
+
+### Added
+
+- Added comma-separated multi-query support for `jobcli search` and site commands (`linkedin`, `indeed`, `glassdoor`, `ziprecruiter`, `stepstone`)
+- Added query parsing/validation for multi-search: split/trim/filter, case-insensitive dedupe, empty-query error, and max 10 queries
+- Added search command tests for multi-query parsing, cross-query dedupe behavior, and per-query limit semantics
+
+### Changed
+
+- Changed multi-query result handling to merge all queries and deduplicate overlaps using seen-key normalization (`title + company`, fallback URL)
+- Changed `--limit` semantics to apply per query instead of final merged output size
+- Updated docs (`README.md`, `docs/usage.md`, `docs/multi-search-spec.md`) with multi-query examples and clarified `--limit` behavior
+
 ## [0.2.0] - 2026-02-14
 
 ### Added
