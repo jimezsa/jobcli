@@ -36,7 +36,7 @@ type SiteCmd struct {
 type SearchOptions struct {
 	Location   string `help:"Job location." env:"JOBCLI_DEFAULT_LOCATION"`
 	Country    string `help:"Country code (Indeed/Glassdoor)." env:"JOBCLI_DEFAULT_COUNTRY"`
-	Limit      int    `help:"Maximum results." env:"JOBCLI_DEFAULT_LIMIT"`
+	Limit      int    `help:"Maximum results per query." env:"JOBCLI_DEFAULT_LIMIT"`
 	Offset     int    `help:"Offset for pagination."`
 	Remote     bool   `help:"Remote-only roles."`
 	JobType    string `help:"Job type filter (fulltime, parttime, contract, internship)." enum:",fulltime,parttime,contract,internship" default:""`
@@ -52,6 +52,8 @@ type SearchOptions struct {
 	NewOut     string `help:"Write unseen jobs JSON to a file (requires --seen)."`
 	SeenUpdate bool   `help:"Update --seen history file by merging in newly discovered unseen jobs after search completes (requires --seen)."`
 }
+
+const maxQueries = 10
 
 func (s *SearchCmd) Run(ctx *Context) error {
 	return runSearch(ctx, s.Query, s.Sites, s.SearchOptions)
@@ -72,9 +74,13 @@ func runSearch(ctx *Context, query string, sitesArg string, opts SearchOptions) 
 		return fmt.Errorf("--seen-update requires --seen")
 	}
 
+	queries, err := parseQueries(query)
+	if err != nil {
+		return err
+	}
+
 	cfg := ctx.Config
-	params := models.SearchParams{
-		Query:    query,
+	baseParams := models.SearchParams{
 		Location: firstNonEmpty(opts.Location, cfg.DefaultLocation),
 		Country:  firstNonEmpty(opts.Country, cfg.DefaultCountry),
 		Limit:    defaultInt(opts.Limit, cfg.DefaultLimit),
@@ -111,15 +117,24 @@ func runSearch(ctx *Context, query string, sitesArg string, opts SearchOptions) 
 		defer stopIndicator()
 	}
 
-	jobs, failures, err := runScrapers(selected, params)
-	if err != nil {
-		return err
+	var (
+		jobs     []models.Job
+		failures []scraperFailure
+	)
+	for _, currentQuery := range queries {
+		queryJobs, queryFailures, runErr := runScrapersForQuery(selected, baseParams, currentQuery)
+		if runErr != nil {
+			return runErr
+		}
+		queryJobs = limitJobs(queryJobs, baseParams.Limit)
+		jobs = mergeUniqueJobs(jobs, queryJobs)
+		failures = append(failures, queryFailures...)
 	}
-	reportScraperFailures(ctx, failures)
 
-	if params.Limit > 0 && len(jobs) > params.Limit {
-		jobs = jobs[:params.Limit]
-	}
+	sortJobsBySite(jobs)
+	sortScraperFailures(failures)
+
+	reportScraperFailures(ctx, failures)
 
 	var unseenJobs []models.Job
 	if strings.TrimSpace(opts.Seen) != "" {
@@ -217,6 +232,80 @@ func updateSeenHistory(seenPath string, inputJobs []models.Job) error {
 	return nil
 }
 
+func parseQueries(raw string) ([]string, error) {
+	parts := strings.Split(raw, ",")
+	queries := make([]string, 0, len(parts))
+	seenQueries := make(map[string]struct{}, len(parts))
+
+	for _, part := range parts {
+		query := strings.TrimSpace(part)
+		if query == "" {
+			continue
+		}
+
+		normalized := strings.ToLower(query)
+		if _, exists := seenQueries[normalized]; exists {
+			continue
+		}
+		seenQueries[normalized] = struct{}{}
+		queries = append(queries, query)
+	}
+
+	if len(queries) == 0 {
+		return nil, fmt.Errorf("at least one non-empty query is required")
+	}
+	if len(queries) > maxQueries {
+		return nil, fmt.Errorf("too many queries: max %d", maxQueries)
+	}
+
+	return queries, nil
+}
+
+func runScrapersForQuery(scrapers []scraper.Scraper, base models.SearchParams, query string) ([]models.Job, []scraperFailure, error) {
+	params := base
+	params.Query = query
+	return runScrapers(scrapers, params)
+}
+
+func mergeUniqueJobs(existing []models.Job, incoming []models.Job) []models.Job {
+	if len(incoming) == 0 {
+		return existing
+	}
+
+	keys := make(map[string]struct{}, len(existing)+len(incoming))
+	merged := make([]models.Job, 0, len(existing)+len(incoming))
+
+	for _, job := range existing {
+		merged = append(merged, job)
+		key, ok := seen.Key(job)
+		if !ok {
+			continue
+		}
+		keys[key] = struct{}{}
+	}
+
+	for _, job := range incoming {
+		key, ok := seen.Key(job)
+		if !ok {
+			merged = append(merged, job)
+			continue
+		}
+		if _, exists := keys[key]; exists {
+			continue
+		}
+		merged = append(merged, job)
+	}
+
+	return merged
+}
+
+func limitJobs(jobs []models.Job, limit int) []models.Job {
+	if limit <= 0 || len(jobs) <= limit {
+		return jobs
+	}
+	return jobs[:limit]
+}
+
 func runScrapers(scrapers []scraper.Scraper, params models.SearchParams) ([]models.Job, []scraperFailure, error) {
 	var (
 		wg      sync.WaitGroup
@@ -251,15 +340,22 @@ func runScrapers(scrapers []scraper.Scraper, params models.SearchParams) ([]mode
 		all = append(all, res.jobs...)
 	}
 
-	sort.SliceStable(all, func(i, j int) bool {
-		return strings.ToLower(all[i].Site) < strings.ToLower(all[j].Site)
-	})
+	sortJobsBySite(all)
+	sortScraperFailures(failures)
 
+	return all, failures, nil
+}
+
+func sortJobsBySite(jobs []models.Job) {
+	sort.SliceStable(jobs, func(i, j int) bool {
+		return strings.ToLower(jobs[i].Site) < strings.ToLower(jobs[j].Site)
+	})
+}
+
+func sortScraperFailures(failures []scraperFailure) {
 	sort.SliceStable(failures, func(i, j int) bool {
 		return strings.ToLower(failures[i].site) < strings.ToLower(failures[j].site)
 	})
-
-	return all, failures, nil
 }
 
 type scraperResult struct {

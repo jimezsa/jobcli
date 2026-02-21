@@ -101,13 +101,12 @@ After merging and deduplication, keep existing sorting behavior:
 
 ### Limit semantics
 
-`--limit` remains the max number of rows in final output for the command:
+`--limit` is the max number of rows fetched per query:
 
-- Apply limit after cross-query merge/dedup.
-- If `--limit <= 0`, output all merged results.
+- Apply limit to each query result set before cross-query merge/dedup.
+- If `--limit <= 0`, fetch/output all merged results.
 
-This keeps user-visible meaning of `--limit` consistent with current command-level
-expectation (max rows returned).
+With multiple queries, final merged output may exceed `--limit`.
 
 ### Seen flags behavior
 
@@ -192,7 +191,7 @@ Behavioral tests in `internal/cmd/search_test.go`:
 - Merged multi-query result set is deduplicated via seen-key behavior.
 - `--new-only` on multi-query output returns unseen jobs only.
 - `--seen-update` updates history once with merged unseen jobs.
-- `--limit` applied after merge/dedup.
+- `--limit` applied per query before merge/dedup.
 
 Regression tests:
 

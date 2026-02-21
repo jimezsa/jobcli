@@ -3,6 +3,8 @@ package cmd
 import (
 	"io"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/jimezsa/jobcli/internal/export"
@@ -76,5 +78,188 @@ func TestUpdateSeenHistoryCreatesFileAndMerges(t *testing.T) {
 	}
 	if len(got) != 2 {
 		t.Fatalf("len(got) after 3rd update = %d, want 2", len(got))
+	}
+}
+
+func TestParseQueries(t *testing.T) {
+	t.Run("single query", func(t *testing.T) {
+		got, err := parseQueries("software engineer")
+		if err != nil {
+			t.Fatalf("parseQueries() error = %v", err)
+		}
+		want := []string{"software engineer"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("parseQueries() = %#v, want %#v", got, want)
+		}
+	})
+
+	t.Run("multi query with spaces", func(t *testing.T) {
+		got, err := parseQueries("software engineer, hardware engineer")
+		if err != nil {
+			t.Fatalf("parseQueries() error = %v", err)
+		}
+		want := []string{"software engineer", "hardware engineer"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("parseQueries() = %#v, want %#v", got, want)
+		}
+	})
+
+	t.Run("empty tokens removed", func(t *testing.T) {
+		got, err := parseQueries("software engineer, , Data Scientist")
+		if err != nil {
+			t.Fatalf("parseQueries() error = %v", err)
+		}
+		want := []string{"software engineer", "Data Scientist"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("parseQueries() = %#v, want %#v", got, want)
+		}
+	})
+
+	t.Run("case-insensitive dedupe keeps first token", func(t *testing.T) {
+		got, err := parseQueries("Backend,backend, BACKEND")
+		if err != nil {
+			t.Fatalf("parseQueries() error = %v", err)
+		}
+		want := []string{"Backend"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("parseQueries() = %#v, want %#v", got, want)
+		}
+	})
+
+	t.Run("max query validation", func(t *testing.T) {
+		input := strings.Join([]string{
+			"q1", "q2", "q3", "q4", "q5",
+			"q6", "q7", "q8", "q9", "q10", "q11",
+		}, ",")
+		_, err := parseQueries(input)
+		if err == nil {
+			t.Fatalf("parseQueries() error = nil, want error")
+		}
+		if err.Error() != "too many queries: max 10" {
+			t.Fatalf("parseQueries() error = %q, want %q", err.Error(), "too many queries: max 10")
+		}
+	})
+
+	t.Run("empty input validation", func(t *testing.T) {
+		_, err := parseQueries(" ,  , ")
+		if err == nil {
+			t.Fatalf("parseQueries() error = nil, want error")
+		}
+		if err.Error() != "at least one non-empty query is required" {
+			t.Fatalf("parseQueries() error = %q, want %q", err.Error(), "at least one non-empty query is required")
+		}
+	})
+}
+
+func TestMergeUniqueJobsDedupesAcrossQueries(t *testing.T) {
+	existing := []models.Job{
+		{Site: "linkedin", Title: "Backend Engineer", Company: "Acme", URL: "https://example.com/1"},
+		{Site: "indeed", URL: "https://example.com/fallback"},
+	}
+	incoming := []models.Job{
+		{Site: "glassdoor", Title: " backend engineer ", Company: "ACME", URL: "https://example.com/other"},
+		{Site: "ziprecruiter", URL: "https://example.com/fallback"},
+		{Site: "linkedin", Title: "Data Engineer", Company: "Acme", URL: "https://example.com/2"},
+		{Site: "stepstone"},
+	}
+
+	got := mergeUniqueJobs(existing, incoming)
+	if len(got) != 4 {
+		t.Fatalf("len(got) = %d, want 4", len(got))
+	}
+	if got[0].Title != "Backend Engineer" || got[1].URL != "https://example.com/fallback" {
+		t.Fatalf("existing jobs order/values changed: %#v", got[:2])
+	}
+	if got[2].Title != "Data Engineer" {
+		t.Fatalf("expected unique incoming job at index 2, got %#v", got[2])
+	}
+	if got[3].Site != "stepstone" {
+		t.Fatalf("expected invalid-key incoming job at index 3, got %#v", got[3])
+	}
+}
+
+func TestMergeUniqueJobsKeepsSingleQueryDuplicates(t *testing.T) {
+	incoming := []models.Job{
+		{Site: "linkedin", Title: "Backend Engineer", Company: "Acme", URL: "https://example.com/1"},
+		{Site: "indeed", Title: "Backend Engineer", Company: "Acme", URL: "https://example.com/2"},
+	}
+
+	got := mergeUniqueJobs(nil, incoming)
+	if len(got) != 2 {
+		t.Fatalf("len(got) = %d, want 2", len(got))
+	}
+}
+
+func TestLimitJobs(t *testing.T) {
+	jobs := []models.Job{
+		{Site: "linkedin", Title: "one"},
+		{Site: "indeed", Title: "two"},
+		{Site: "glassdoor", Title: "three"},
+	}
+
+	got := limitJobs(jobs, 2)
+	if len(got) != 2 {
+		t.Fatalf("len(got) = %d, want 2", len(got))
+	}
+
+	got = limitJobs(jobs, 0)
+	if len(got) != 3 {
+		t.Fatalf("len(got) with unlimited = %d, want 3", len(got))
+	}
+}
+
+func TestMultiQuerySeenWorkflowAndLimitPerQuery(t *testing.T) {
+	dir := t.TempDir()
+	seenPath := filepath.Join(dir, "jobs_seen.json")
+
+	seenSeed := []models.Job{
+		{Site: "linkedin", Title: "Platform Engineer", Company: "Acme", URL: "https://example.com/seed"},
+	}
+	if err := seen.WriteJobs(seenPath, seenSeed); err != nil {
+		t.Fatalf("WriteJobs() seed error = %v", err)
+	}
+
+	queryOne := []models.Job{
+		{Site: "linkedin", Title: "Platform Engineer", Company: "Acme", URL: "https://example.com/seed"},
+		{Site: "indeed", Title: "Hardware Engineer", Company: "Beta", URL: "https://example.com/1"},
+		{Site: "ziprecruiter", Title: "Embedded Engineer", Company: "Delta", URL: "https://example.com/extra-q1"},
+	}
+	queryTwo := []models.Job{
+		{Site: "glassdoor", Title: "Hardware Engineer", Company: "beta", URL: "https://example.com/dup"},
+		{Site: "ziprecruiter", Title: "Data Engineer", Company: "Gamma", URL: "https://example.com/2"},
+		{Site: "linkedin", Title: "Ml Engineer", Company: "Epsilon", URL: "https://example.com/extra-q2"},
+	}
+
+	limit := 2
+	limitedQ1 := limitJobs(queryOne, limit)
+	limitedQ2 := limitJobs(queryTwo, limit)
+
+	merged := mergeUniqueJobs(nil, limitedQ1)
+	merged = mergeUniqueJobs(merged, limitedQ2)
+	if len(merged) != 3 {
+		t.Fatalf("len(merged) = %d, want 3", len(merged))
+	}
+	if len(merged) <= limit {
+		t.Fatalf("final merged output should not be capped by per-query limit: len(merged) = %d, limit = %d", len(merged), limit)
+	}
+
+	seenJobs, err := seen.ReadJobsAllowMissing(seenPath)
+	if err != nil {
+		t.Fatalf("ReadJobsAllowMissing() error = %v", err)
+	}
+	unseenJobs, _ := seen.Diff(merged, seenJobs)
+	if len(unseenJobs) != 2 {
+		t.Fatalf("len(unseenJobs) = %d, want 2", len(unseenJobs))
+	}
+
+	if err := updateSeenHistory(seenPath, unseenJobs); err != nil {
+		t.Fatalf("updateSeenHistory() error = %v", err)
+	}
+	updatedSeen, err := seen.ReadJobs(seenPath)
+	if err != nil {
+		t.Fatalf("ReadJobs() error = %v", err)
+	}
+	if len(updatedSeen) != 3 {
+		t.Fatalf("len(updatedSeen) = %d, want 3", len(updatedSeen))
 	}
 }

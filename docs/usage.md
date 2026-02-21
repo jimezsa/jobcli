@@ -22,6 +22,9 @@ make
 # search software engineer roles in Munich, Germany
 ./jobcli search "software engineer" --location "Munich, Germany" --country de --limit 25
 
+# search multiple queries in one run (comma-separated)
+./jobcli search "software engineer,hardware engineer,data scientist" --location "Munich, Germany" --country de --limit 25
+
 # search a single site
 ./jobcli linkedin "platform engineer" --remote
 
@@ -68,7 +71,7 @@ make
 
 - `--location`
 - `--sites` (comma-separated list; default `all`)
-- `--limit`
+- `--limit` (maximum rows fetched per query; final merged output may exceed this when using comma-separated queries)
 - `--offset`
 - `--remote`
 - `--job-type=fulltime|parttime|contract|internship`
@@ -85,6 +88,7 @@ make
 
 Notes:
 
+- `search <query>` supports comma-separated query lists (max `10`), e.g. `"backend,platform,sre"`.
 - If you use `--new-only --json --output jobs_new.json`, you usually don’t need `--new-out`.
 - Use `--new-out` when you want to keep the primary output as "all jobs" (table/CSV/etc) but still persist unseen jobs for `jobcli seen update`.
 - Use `--seen-update` if you want to mark newly discovered unseen jobs as "seen" immediately (no separate `jobcli seen update` step).

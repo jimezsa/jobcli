@@ -41,6 +41,9 @@ jobcli
 # search software engineer roles in Munich, Germany
 jobcli search "software engineer" --location "Munich, Germany"  --limit 100 --hours 48
 
+# search multiple queries in one run (comma-separated)
+jobcli search "software engineer,hardware engineer,data scientist" --location "Munich, Germany" --limit 100 --hours 48
+
 # search a single site last 48 hours
 jobcli linkedin "chemical engineer" --location "Munich, Germany"  --limit 10 --hours 48
 
@@ -94,7 +97,7 @@ Search flags:
 
 - `--location`
 - `--sites` (comma-separated list; default `all`)
-- `--limit`
+- `--limit` (maximum rows fetched per query; final merged output may exceed this when using comma-separated queries)
 - `--offset`
 - `--job-type=fulltime|parttime|contract|internship`
 - `--hours`
@@ -107,6 +110,10 @@ Search flags:
 - `--new-only` (output only unseen jobs; requires `--seen`)
 - `--new-out` (also write unseen jobs (`A - B`) to a JSON file; requires `--seen`)
 - `--seen-update` (update `--seen` by merging in newly discovered unseen jobs after the search completes; requires `--seen`)
+
+Notes:
+
+- `search <query>` supports comma-separated query lists (max `10`), e.g. `"backend,platform,sre"`.
 
 Seen flags:
 
