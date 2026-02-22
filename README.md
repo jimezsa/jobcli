@@ -68,22 +68,14 @@ Example `queries.json`:
 
 ```json
 {
-  "job_titles": [
-    "software engineer",
-    "hardware engineer",
-    "data scientist"
-  ]
+  "job_titles": ["software engineer", "hardware engineer", "data scientist"]
 }
 ```
 
 Also supported:
 
 ```json
-[
-  "software engineer",
-  "hardware engineer",
-  "data scientist"
-]
+["software engineer", "hardware engineer", "data scientist"]
 ```
 
 Full profile (queries + defaults):
@@ -138,57 +130,57 @@ jobcli search --query-file queries.json
 
 Global flags:
 
-| Flag | Description |
-| --- | --- |
-| `--color=auto\|always\|never` | Color mode for CLI output. |
-| `--json` | Write JSON to stdout and disable colors. |
-| `--plain` | Write TSV to stdout and disable colors. |
-| `--verbose` | Enable debug logging. |
-| `--version` | Print version information. |
+| Flag                          | Description                              |
+| ----------------------------- | ---------------------------------------- |
+| `--color=auto\|always\|never` | Color mode for CLI output.               |
+| `--json`                      | Write JSON to stdout and disable colors. |
+| `--plain`                     | Write TSV to stdout and disable colors.  |
+| `--verbose`                   | Enable debug logging.                    |
+| `--version`                   | Print version information.               |
 
 Search and site flags (`search`, `linkedin`, `indeed`, `glassdoor`, `ziprecruiter`, `stepstone`):
 
-| Flag | Description |
-| --- | --- |
-| `--location` | Job location filter. |
-| `--country` | Country code filter (used by Indeed/Glassdoor). |
-| `--limit` | Maximum results fetched per query. |
-| `--offset` | Pagination offset. |
-| `--remote` | Remote-only roles. |
-| `--job-type=fulltime\|parttime\|contract\|internship` | Job type filter. |
-| `--hours` | Jobs posted in the last N hours. |
-| `--format=csv\|json\|md` | Explicit output format override. |
-| `--links=short\|full` | Table link rendering style. |
-| `--output`, `-o` | Write primary output to a file. |
-| `--out` | Alias for `--output`. |
-| `--file` | Alias for `--output`. |
-| `--proxies` | Comma-separated proxy URLs. |
-| `--query-file` | Path to JSON queries file (array, `job_titles` object, or full profile with `search_options`/`global_options`). |
-| `--seen` | Path to seen jobs JSON history file. |
-| `--new-only` | Output only unseen jobs (`A - B`); requires `--seen`. |
-| `--new-out` | Also write unseen jobs (`A - B`) to JSON; requires `--seen`. |
-| `--seen-update` | Merge newly discovered unseen jobs into `--seen`; requires `--seen`. |
-| `--sites` | Comma-separated site list for `search` only (default: `all`). |
+| Flag                                                  | Description                                                                                                     |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `--location`                                          | Job location filter.                                                                                            |
+| `--country`                                           | Country code filter (used by Indeed/Glassdoor).                                                                 |
+| `--limit`                                             | Maximum results fetched per query.                                                                              |
+| `--offset`                                            | Pagination offset.                                                                                              |
+| `--remote`                                            | Remote-only roles.                                                                                              |
+| `--job-type=fulltime\|parttime\|contract\|internship` | Job type filter.                                                                                                |
+| `--hours`                                             | Jobs posted in the last N hours.                                                                                |
+| `--format=csv\|json\|md`                              | Explicit output format override.                                                                                |
+| `--links=short\|full`                                 | Table link rendering style.                                                                                     |
+| `--output`, `-o`                                      | Write primary output to a file.                                                                                 |
+| `--out`                                               | Alias for `--output`.                                                                                           |
+| `--file`                                              | Alias for `--output`.                                                                                           |
+| `--proxies`                                           | Comma-separated proxy URLs.                                                                                     |
+| `--query-file`                                        | Path to JSON queries file (array, `job_titles` object, or full profile with `search_options`/`global_options`). |
+| `--seen`                                              | Path to seen jobs JSON history file.                                                                            |
+| `--new-only`                                          | Output only unseen jobs (`A - B`); requires `--seen`.                                                           |
+| `--new-out`                                           | Also write unseen jobs (`A - B`) to JSON; requires `--seen`.                                                    |
+| `--seen-update`                                       | Merge newly discovered unseen jobs into `--seen`; requires `--seen`.                                            |
+| `--sites`                                             | Comma-separated site list for `search` only (default: `all`).                                                   |
 
 Seen command flags:
 
-| Command | Flag | Description |
-| --- | --- | --- |
-| `seen diff` | `--new` | Path to new jobs JSON (`A`). |
-| `seen diff` | `--seen` | Path to seen jobs JSON (`B`); missing file is treated as empty. |
-| `seen diff` | `--out` | Output path for unseen jobs JSON (`C = A - B`). |
-| `seen diff` | `--stats` | Print comparison stats. |
-| `seen update` | `--seen` | Path to seen jobs JSON (`B`); missing file is treated as empty. |
-| `seen update` | `--input` | Input jobs JSON to merge into seen history. |
-| `seen update` | `--out` | Output path for updated seen jobs JSON. |
-| `seen update` | `--stats` | Print merge stats. |
+| Command       | Flag      | Description                                                     |
+| ------------- | --------- | --------------------------------------------------------------- |
+| `seen diff`   | `--new`   | Path to new jobs JSON (`A`).                                    |
+| `seen diff`   | `--seen`  | Path to seen jobs JSON (`B`); missing file is treated as empty. |
+| `seen diff`   | `--out`   | Output path for unseen jobs JSON (`C = A - B`).                 |
+| `seen diff`   | `--stats` | Print comparison stats.                                         |
+| `seen update` | `--seen`  | Path to seen jobs JSON (`B`); missing file is treated as empty. |
+| `seen update` | `--input` | Input jobs JSON to merge into seen history.                     |
+| `seen update` | `--out`   | Output path for updated seen jobs JSON.                         |
+| `seen update` | `--stats` | Print merge stats.                                              |
 
 Proxy command flags:
 
-| Command | Flag | Description |
-| --- | --- | --- |
-| `proxies check` | `--target` | Target URL to validate proxies against (default: `https://www.google.com`). |
-| `proxies check` | `--timeout` | Per-request timeout in seconds (default: `15`). |
+| Command         | Flag        | Description                                                                 |
+| --------------- | ----------- | --------------------------------------------------------------------------- |
+| `proxies check` | `--target`  | Target URL to validate proxies against (default: `https://www.google.com`). |
+| `proxies check` | `--timeout` | Per-request timeout in seconds (default: `15`).                             |
 
 Notes:
 
