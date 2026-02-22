@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"io"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -147,6 +148,167 @@ func TestParseQueries(t *testing.T) {
 		}
 		if err.Error() != "at least one non-empty query is required" {
 			t.Fatalf("parseQueries() error = %q, want %q", err.Error(), "at least one non-empty query is required")
+		}
+	})
+}
+
+func TestLoadQueriesFromJSON(t *testing.T) {
+	t.Run("top-level string array", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "queries.json")
+		content := `["software engineer","  Data Scientist  ",""]`
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatalf("WriteFile() error = %v", err)
+		}
+
+		got, err := loadQueriesFromJSON(path)
+		if err != nil {
+			t.Fatalf("loadQueriesFromJSON() error = %v", err)
+		}
+		want := []string{"software engineer", "Data Scientist"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("loadQueriesFromJSON() = %#v, want %#v", got, want)
+		}
+	})
+
+	t.Run("object with job_titles", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "queries.json")
+		content := `{"job_titles":["Backend Engineer","backend engineer","SRE"]}`
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatalf("WriteFile() error = %v", err)
+		}
+
+		got, err := loadQueriesFromJSON(path)
+		if err != nil {
+			t.Fatalf("loadQueriesFromJSON() error = %v", err)
+		}
+		want := []string{"Backend Engineer", "backend engineer", "SRE"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("loadQueriesFromJSON() = %#v, want %#v", got, want)
+		}
+	})
+
+	t.Run("invalid json", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "queries.json")
+		content := `{"job_titles":[`
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatalf("WriteFile() error = %v", err)
+		}
+
+		_, err := loadQueriesFromJSON(path)
+		if err == nil {
+			t.Fatalf("loadQueriesFromJSON() error = nil, want error")
+		}
+		if !strings.Contains(err.Error(), "parse --query-file") {
+			t.Fatalf("loadQueriesFromJSON() error = %q, want parse --query-file message", err.Error())
+		}
+	})
+
+	t.Run("unsupported schema", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "queries.json")
+		content := `{"queries":["backend"]}`
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatalf("WriteFile() error = %v", err)
+		}
+
+		_, err := loadQueriesFromJSON(path)
+		if err == nil {
+			t.Fatalf("loadQueriesFromJSON() error = nil, want error")
+		}
+		if !strings.Contains(err.Error(), "expected top-level string array or object with \"job_titles\" string array") {
+			t.Fatalf("loadQueriesFromJSON() error = %q, want schema message", err.Error())
+		}
+	})
+
+	t.Run("non-string entry", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "queries.json")
+		content := `{"job_titles":["backend",123]}`
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatalf("WriteFile() error = %v", err)
+		}
+
+		_, err := loadQueriesFromJSON(path)
+		if err == nil {
+			t.Fatalf("loadQueriesFromJSON() error = nil, want error")
+		}
+		if !strings.Contains(err.Error(), "job_titles[1] must be a string") {
+			t.Fatalf("loadQueriesFromJSON() error = %q, want non-string index message", err.Error())
+		}
+	})
+}
+
+func TestResolveQueries(t *testing.T) {
+	t.Run("query-file only", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "queries.json")
+		content := `{"job_titles":["Backend","SRE"]}`
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatalf("WriteFile() error = %v", err)
+		}
+
+		got, err := resolveQueries("", path)
+		if err != nil {
+			t.Fatalf("resolveQueries() error = %v", err)
+		}
+		want := []string{"Backend", "SRE"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("resolveQueries() = %#v, want %#v", got, want)
+		}
+	})
+
+	t.Run("positional plus query-file preserves first and dedupes case-insensitively", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "queries.json")
+		content := `{"job_titles":["backend","ML Engineer","  "]}`
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatalf("WriteFile() error = %v", err)
+		}
+
+		got, err := resolveQueries("Backend,Data Engineer", path)
+		if err != nil {
+			t.Fatalf("resolveQueries() error = %v", err)
+		}
+		want := []string{"Backend", "Data Engineer", "ML Engineer"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("resolveQueries() = %#v, want %#v", got, want)
+		}
+	})
+
+	t.Run("combined sources enforce max query validation", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "queries.json")
+		content := `{"job_titles":["q7","q8","q9","q10","q11"]}`
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatalf("WriteFile() error = %v", err)
+		}
+
+		_, err := resolveQueries("q1,q2,q3,q4,q5,q6", path)
+		if err == nil {
+			t.Fatalf("resolveQueries() error = nil, want error")
+		}
+		if err.Error() != "too many queries: max 10" {
+			t.Fatalf("resolveQueries() error = %q, want %q", err.Error(), "too many queries: max 10")
+		}
+	})
+
+	t.Run("both sources empty returns validation error", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "queries.json")
+		content := `{"job_titles":[" ",""]}`
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatalf("WriteFile() error = %v", err)
+		}
+
+		_, err := resolveQueries(" , ", path)
+		if err == nil {
+			t.Fatalf("resolveQueries() error = nil, want error")
+		}
+		if err.Error() != "at least one non-empty query is required" {
+			t.Fatalf("resolveQueries() error = %q, want %q", err.Error(), "at least one non-empty query is required")
 		}
 	})
 }

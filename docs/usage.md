@@ -25,6 +25,9 @@ make
 # search multiple queries in one run (comma-separated)
 ./jobcli search "software engineer,hardware engineer,data scientist" --location "Munich, Germany" --country de --limit 25
 
+# load queries from JSON file
+./jobcli search --query-file queries.json --location "Munich, Germany" --country de --limit 25
+
 # search a single site
 ./jobcli linkedin "platform engineer" --remote
 
@@ -49,12 +52,12 @@ make
 - `jobcli version`
 - `jobcli config init`
 - `jobcli config path`
-- `jobcli search <query> [--location L] [--sites S] [--limit N] [--offset N]`
-- `jobcli linkedin <query> ...`
-- `jobcli indeed <query> ...`
-- `jobcli glassdoor <query> ...`
-- `jobcli ziprecruiter <query> ...`
-- `jobcli stepstone <query> ...`
+- `jobcli search [<query>] [--query-file queries.json] [--location L] [--sites S] [--limit N] [--offset N]`
+- `jobcli linkedin [<query>] [--query-file queries.json] ...`
+- `jobcli indeed [<query>] [--query-file queries.json] ...`
+- `jobcli glassdoor [<query>] [--query-file queries.json] ...`
+- `jobcli ziprecruiter [<query>] [--query-file queries.json] ...`
+- `jobcli stepstone [<query>] [--query-file queries.json] ...`
 - `jobcli seen diff --new A.json --seen B.json --out C.json [--stats]`
 - `jobcli seen update --seen B.json --input C.json --out B.json [--stats]`
 - `jobcli proxies check`
@@ -81,6 +84,7 @@ make
 - `--links=short|full`
 - `--output` (aliases: `--out`, `--file`) (write the primary output to a file)
 - `--proxies` (comma-separated URLs)
+- `--query-file` (JSON path with either a top-level string array or object with `job_titles` string array)
 - `--seen` (path to seen jobs JSON history)
 - `--new-only` (output only unseen jobs; requires `--seen`)
 - `--new-out` (also write unseen jobs (`A - B`) to a JSON file; requires `--seen`)
@@ -88,7 +92,9 @@ make
 
 Notes:
 
-- `search <query>` supports comma-separated query lists (max `10`), e.g. `"backend,platform,sre"`.
+- `search` supports comma-separated positional query lists (max `10`), e.g. `"backend,platform,sre"`.
+- `--query-file` accepts either `["backend","platform"]` or `{"job_titles":["backend","platform"]}`.
+- Positional and file queries can be combined; positional entries are applied first, then deduped case-insensitively.
 - If you use `--new-only --json --output jobs_new.json`, you usually don’t need `--new-out`.
 - Use `--new-out` when you want to keep the primary output as "all jobs" (table/CSV/etc) but still persist unseen jobs for `jobcli seen update`.
 - Use `--seen-update` if you want to mark newly discovered unseen jobs as "seen" immediately (no separate `jobcli seen update` step).

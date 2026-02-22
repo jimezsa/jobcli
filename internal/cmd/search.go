@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -22,13 +23,13 @@ import (
 )
 
 type SearchCmd struct {
-	Query string `arg:"" required:"" help:"Search query."`
+	Query string `arg:"" optional:"" help:"Search query (comma-separated). Optional when --query-file is provided."`
 	Sites string `help:"Comma-separated list of sites (default: all)." default:"all"`
 	SearchOptions
 }
 
 type SiteCmd struct {
-	Query string `arg:"" required:"" help:"Search query."`
+	Query string `arg:"" optional:"" help:"Search query (comma-separated). Optional when --query-file is provided."`
 	SearchOptions
 	Site string `kong:"-"`
 }
@@ -47,6 +48,7 @@ type SearchOptions struct {
 	Out        string `name:"out" help:"Alias for --output."`
 	File       string `name:"file" help:"Alias for --output."`
 	Proxies    string `help:"Comma-separated proxy URLs." env:"JOBCLI_PROXIES"`
+	QueryFile  string `help:"Path to JSON file with queries (top-level string array or object with job_titles array)."`
 	Seen       string `help:"Path to seen jobs JSON file."`
 	NewOnly    bool   `help:"Output only unseen jobs (requires --seen)."`
 	NewOut     string `help:"Write unseen jobs JSON to a file (requires --seen)."`
@@ -74,7 +76,7 @@ func runSearch(ctx *Context, query string, sitesArg string, opts SearchOptions) 
 		return fmt.Errorf("--seen-update requires --seen")
 	}
 
-	queries, err := parseQueries(query)
+	queries, err := resolveQueries(query, opts.QueryFile)
 	if err != nil {
 		return err
 	}
@@ -233,22 +235,59 @@ func updateSeenHistory(seenPath string, inputJobs []models.Job) error {
 }
 
 func parseQueries(raw string) ([]string, error) {
+	return mergeAndNormalizeQueries(splitQueries(raw), nil)
+}
+
+func resolveQueries(raw string, queryFile string) ([]string, error) {
+	positionalQueries := splitQueries(raw)
+	var fileQueries []string
+	if strings.TrimSpace(queryFile) != "" {
+		var err error
+		fileQueries, err = loadQueriesFromJSON(queryFile)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return mergeAndNormalizeQueries(positionalQueries, fileQueries)
+}
+
+func splitQueries(raw string) []string {
 	parts := strings.Split(raw, ",")
 	queries := make([]string, 0, len(parts))
-	seenQueries := make(map[string]struct{}, len(parts))
 
 	for _, part := range parts {
 		query := strings.TrimSpace(part)
 		if query == "" {
 			continue
 		}
+		queries = append(queries, query)
+	}
 
+	return queries
+}
+
+func mergeAndNormalizeQueries(primary []string, secondary []string) ([]string, error) {
+	queries := make([]string, 0, len(primary)+len(secondary))
+	seenQueries := make(map[string]struct{}, len(primary)+len(secondary))
+
+	appendUnique := func(rawQuery string) {
+		query := strings.TrimSpace(rawQuery)
+		if query == "" {
+			return
+		}
 		normalized := strings.ToLower(query)
 		if _, exists := seenQueries[normalized]; exists {
-			continue
+			return
 		}
 		seenQueries[normalized] = struct{}{}
 		queries = append(queries, query)
+	}
+
+	for _, query := range primary {
+		appendUnique(query)
+	}
+	for _, query := range secondary {
+		appendUnique(query)
 	}
 
 	if len(queries) == 0 {
@@ -258,6 +297,51 @@ func parseQueries(raw string) ([]string, error) {
 		return nil, fmt.Errorf("too many queries: max %d", maxQueries)
 	}
 
+	return queries, nil
+}
+
+func loadQueriesFromJSON(path string) ([]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read --query-file %q: %w", path, err)
+	}
+
+	var decoded any
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return nil, fmt.Errorf("parse --query-file %q: %w", path, err)
+	}
+
+	switch value := decoded.(type) {
+	case []any:
+		return parseStringArray(value, path, "root array")
+	case map[string]any:
+		rawTitles, ok := value["job_titles"]
+		if !ok {
+			return nil, fmt.Errorf("invalid --query-file %q: expected top-level string array or object with \"job_titles\" string array", path)
+		}
+		titles, ok := rawTitles.([]any)
+		if !ok {
+			return nil, fmt.Errorf("invalid --query-file %q: field \"job_titles\" must be an array of strings", path)
+		}
+		return parseStringArray(titles, path, "job_titles")
+	default:
+		return nil, fmt.Errorf("invalid --query-file %q: expected top-level string array or object with \"job_titles\" string array", path)
+	}
+}
+
+func parseStringArray(values []any, path string, fieldName string) ([]string, error) {
+	queries := make([]string, 0, len(values))
+	for idx, rawValue := range values {
+		query, ok := rawValue.(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid --query-file %q: %s[%d] must be a string", path, fieldName, idx)
+		}
+		query = strings.TrimSpace(query)
+		if query == "" {
+			continue
+		}
+		queries = append(queries, query)
+	}
 	return queries, nil
 }
 

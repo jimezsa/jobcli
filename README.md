@@ -44,6 +44,9 @@ jobcli search "software engineer" --location "Munich, Germany"  --limit 100 --ho
 # search multiple queries in one run (comma-separated)
 jobcli search "software engineer,hardware engineer,data scientist" --location "Munich, Germany" --limit 100 --hours 48
 
+# load queries from JSON file
+jobcli search --query-file queries.json --location "Munich, Germany" --limit 100 --hours 48
+
 # search a single site last 48 hours
 jobcli linkedin "chemical engineer" --location "Munich, Germany"  --limit 10 --hours 48
 
@@ -66,12 +69,12 @@ jobcli search "software engineer" --location "Munich, Germany" --country de --pr
 - `jobcli version`
 - `jobcli config init`
 - `jobcli config path`
-- `jobcli search <query> [--location L] [--sites S] [--limit N] [--offset N]`
-- `jobcli linkedin <query> ...`
-- `jobcli indeed <query> ...`
-- `jobcli glassdoor <query> ...`
-- `jobcli ziprecruiter <query> ...`
-- `jobcli stepstone <query> ...`
+- `jobcli search [<query>] [--query-file queries.json] [--location L] [--sites S] [--limit N] [--offset N]`
+- `jobcli linkedin [<query>] [--query-file queries.json] ...`
+- `jobcli indeed [<query>] [--query-file queries.json] ...`
+- `jobcli glassdoor [<query>] [--query-file queries.json] ...`
+- `jobcli ziprecruiter [<query>] [--query-file queries.json] ...`
+- `jobcli stepstone [<query>] [--query-file queries.json] ...`
 - `jobcli seen diff --new A.json --seen B.json --out C.json [--stats]`
 - `jobcli seen update --seen B.json --input C.json --out B.json [--stats]`
 - `jobcli proxies check`
@@ -112,6 +115,7 @@ Search and site flags (`search`, `linkedin`, `indeed`, `glassdoor`, `ziprecruite
 | `--out` | Alias for `--output`. |
 | `--file` | Alias for `--output`. |
 | `--proxies` | Comma-separated proxy URLs. |
+| `--query-file` | Path to JSON queries file (top-level string array or object with `job_titles` string array). |
 | `--seen` | Path to seen jobs JSON history file. |
 | `--new-only` | Output only unseen jobs (`A - B`); requires `--seen`. |
 | `--new-out` | Also write unseen jobs (`A - B`) to JSON; requires `--seen`. |
@@ -140,7 +144,9 @@ Proxy command flags:
 
 Notes:
 
-- `search <query>` supports comma-separated query lists (max `10`), e.g. `"backend,platform,sre"`.
+- `search` supports comma-separated positional query lists (max `10`), e.g. `"backend,platform,sre"`.
+- `--query-file` accepts either `["backend","platform"]` or `{"job_titles":["backend","platform"]}`.
+- Positional and file queries can be combined; positional entries are applied first, then deduped case-insensitively.
 
 ## Seen Jobs Workflow
 
