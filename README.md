@@ -64,6 +64,28 @@ jobcli search "software engineer" --location "Munich, Germany" --country de --pr
 
 ```
 
+Example `queries.json`:
+
+```json
+{
+  "job_titles": [
+    "software engineer",
+    "hardware engineer",
+    "data scientist"
+  ]
+}
+```
+
+Also supported:
+
+```json
+[
+  "software engineer",
+  "hardware engineer",
+  "data scientist"
+]
+```
+
 ## Commands
 
 - `jobcli version`

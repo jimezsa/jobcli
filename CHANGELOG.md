@@ -5,6 +5,7 @@
 ### Added
 
 - Added comma-separated multi-query support for `jobcli search` and site commands (`linkedin`, `indeed`, `glassdoor`, `ziprecruiter`, `stepstone`)
+- Added `--query-file` support for `search` and site commands to load queries from JSON (`["backend","platform"]` or `{"job_titles":["backend","platform"]}`)
 - Added multi-query parsing/validation: split and trim tokens, remove empties, case-insensitive dedupe, empty-query error, and max 10 queries
 - Added cross-query merge/dedupe flow using seen-key normalization (`title + company`, fallback URL) plus per-query limiting before merge
 - Added regression coverage in `internal/cmd/search_test.go` for query parsing, per-query limit behavior, and multi-query seen/update workflows
