@@ -6,6 +6,7 @@
 
 - Added comma-separated multi-query support for `jobcli search` and site commands (`linkedin`, `indeed`, `glassdoor`, `ziprecruiter`, `stepstone`)
 - Added `--query-file` support for `search` and site commands to load queries from JSON (`["backend","platform"]` or `{"job_titles":["backend","platform"]}`)
+- Added full `--query-file` profile support with optional `search_options` and `global_options`, enabling one-command runs like `jobcli search --query-file queries.json`
 - Added multi-query parsing/validation: split and trim tokens, remove empties, case-insensitive dedupe, empty-query error, and max 10 queries
 - Added cross-query merge/dedupe flow using seen-key normalization (`title + company`, fallback URL) plus per-query limiting before merge
 - Added regression coverage in `internal/cmd/search_test.go` for query parsing, per-query limit behavior, and multi-query seen/update workflows
@@ -16,6 +17,7 @@
 ### Changed
 
 - Changed `--limit` semantics to "maximum results per query" (instead of final merged output size)
+- Changed `--query-file` behavior to support defaults precedence (`CLI flags > query-file defaults > env/config defaults`) with schema validation (unknown fields, enum constraints, `json/plain` conflict)
 - Changed CLI search surface by removing `google` as a selectable direct site command and registry target
 - Changed GitHub release workflow to publish notes directly from the matching `CHANGELOG.md` version section
 - Updated command overview examples and docs (`README.md`, `docs/usage.md`) including seen-update flow, multi-query examples, and expanded flag tables
