@@ -1,18 +1,30 @@
 # Changelog
 
-## [0.2.1] - 2026-02-21
+## [0.2.1] - 2026-02-22
 
 ### Added
 
 - Added comma-separated multi-query support for `jobcli search` and site commands (`linkedin`, `indeed`, `glassdoor`, `ziprecruiter`, `stepstone`)
-- Added query parsing/validation for multi-search: split/trim/filter, case-insensitive dedupe, empty-query error, and max 10 queries
-- Added search command tests for multi-query parsing, cross-query dedupe behavior, and per-query limit semantics
+- Added multi-query parsing/validation: split and trim tokens, remove empties, case-insensitive dedupe, empty-query error, and max 10 queries
+- Added cross-query merge/dedupe flow using seen-key normalization (`title + company`, fallback URL) plus per-query limiting before merge
+- Added regression coverage in `internal/cmd/search_test.go` for query parsing, per-query limit behavior, and multi-query seen/update workflows
+- Added `docs/multi-search-spec.md` with implementation and behavior details
+- Added `skills/jobcli-job-search/scripts/job_discriminator.py` for LLM-based YES/NO job filtering with confidence gating and concurrent workers
+- Added default student/internship exclusions in `skills/jobcli-cv-summary/SKILL.md` to reduce irrelevant persona matches
 
 ### Changed
 
-- Changed multi-query result handling to merge all queries and deduplicate overlaps using seen-key normalization (`title + company`, fallback URL)
-- Changed `--limit` semantics to apply per query instead of final merged output size
-- Updated docs (`README.md`, `docs/usage.md`, `docs/multi-search-spec.md`) with multi-query examples and clarified `--limit` behavior
+- Changed `--limit` semantics to "maximum results per query" (instead of final merged output size)
+- Changed CLI search surface by removing `google` as a selectable direct site command and registry target
+- Changed GitHub release workflow to publish notes directly from the matching `CHANGELOG.md` version section
+- Updated command overview examples and docs (`README.md`, `docs/usage.md`) including seen-update flow, multi-query examples, and expanded flag tables
+- Updated skills docs and search flow to use a binary persona filter pipeline with `jobcli seen update` merge steps and enumerated output formatting
+- Updated job discriminator defaults/behavior (model/API setup, timeout/tokens/workers, progress logging, and more permissive matching guidance)
+
+### Fixed
+
+- Fixed environment loading in the pirate motivator script by reading project-root `.env`
+- Fixed job discriminator throughput by increasing default parallel worker count for faster batch processing
 
 ## [0.2.0] - 2026-02-14
 
