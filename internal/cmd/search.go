@@ -205,6 +205,12 @@ func runSearch(ctx *Context, query string, sitesArg string, opts SearchOptions) 
 		}
 	}
 
+	summaryJobs := jobs
+	if strings.TrimSpace(opts.Seen) != "" {
+		summaryJobs = unseenJobs
+	}
+	printSearchSummary(ctx, summaryJobs)
+
 	return nil
 }
 
@@ -232,6 +238,53 @@ func updateSeenHistory(seenPath string, inputJobs []models.Job) error {
 	}
 
 	return nil
+}
+
+func printSearchSummary(ctx *Context, jobs []models.Job) {
+	if ctx == nil || ctx.Err == nil {
+		return
+	}
+	_, _ = fmt.Fprintf(ctx.Err, "%s\n", formatSearchSummary(jobs))
+}
+
+func formatSearchSummary(jobs []models.Job) string {
+	counts := countJobsBySite(jobs)
+	if len(counts) == 0 {
+		return "summary: new_jobs=0 by_site=none"
+	}
+
+	parts := make([]string, 0, len(counts))
+	for _, count := range counts {
+		parts = append(parts, fmt.Sprintf("%s:%d", count.site, count.total))
+	}
+
+	return fmt.Sprintf("summary: new_jobs=%d by_site=%s", len(jobs), strings.Join(parts, ", "))
+}
+
+type siteCount struct {
+	site  string
+	total int
+}
+
+func countJobsBySite(jobs []models.Job) []siteCount {
+	siteTotals := make(map[string]int, len(jobs))
+	for _, job := range jobs {
+		site := strings.ToLower(strings.TrimSpace(job.Site))
+		if site == "" {
+			site = "unknown"
+		}
+		siteTotals[site]++
+	}
+
+	counts := make([]siteCount, 0, len(siteTotals))
+	for site, total := range siteTotals {
+		counts = append(counts, siteCount{site: site, total: total})
+	}
+
+	sort.SliceStable(counts, func(i, j int) bool {
+		return counts[i].site < counts[j].site
+	})
+	return counts
 }
 
 func parseQueries(raw string) ([]string, error) {

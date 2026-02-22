@@ -370,6 +370,31 @@ func TestLimitJobs(t *testing.T) {
 	}
 }
 
+func TestFormatSearchSummary(t *testing.T) {
+	t.Run("empty jobs", func(t *testing.T) {
+		got := formatSearchSummary(nil)
+		want := "summary: new_jobs=0 by_site=none"
+		if got != want {
+			t.Fatalf("formatSearchSummary() = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("counts by site sorted and normalized", func(t *testing.T) {
+		jobs := []models.Job{
+			{Site: "LinkedIn", Title: "A"},
+			{Site: " indeed ", Title: "B"},
+			{Site: "linkedin", Title: "C"},
+			{Site: "", Title: "D"},
+		}
+
+		got := formatSearchSummary(jobs)
+		want := "summary: new_jobs=4 by_site=indeed:1, linkedin:2, unknown:1"
+		if got != want {
+			t.Fatalf("formatSearchSummary() = %q, want %q", got, want)
+		}
+	})
+}
+
 func TestMultiQuerySeenWorkflowAndLimitPerQuery(t *testing.T) {
 	dir := t.TempDir()
 	seenPath := filepath.Join(dir, "jobs_seen.json")
