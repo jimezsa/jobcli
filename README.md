@@ -87,37 +87,60 @@ jobcli search "software engineer" --location "Munich, Germany" --country de --pr
 
 Global flags:
 
-- `--color=auto|always|never`
-- `--json`
-- `--plain`
-- `--verbose`
-- `--version`
+| Flag | Description |
+| --- | --- |
+| `--color=auto\|always\|never` | Color mode for CLI output. |
+| `--json` | Write JSON to stdout and disable colors. |
+| `--plain` | Write TSV to stdout and disable colors. |
+| `--verbose` | Enable debug logging. |
+| `--version` | Print version information. |
 
-Search flags:
+Search and site flags (`search`, `linkedin`, `indeed`, `glassdoor`, `ziprecruiter`, `stepstone`):
 
-- `--location`
-- `--sites` (comma-separated list; default `all`)
-- `--limit` (maximum rows fetched per query; final merged output may exceed this when using comma-separated queries)
-- `--offset`
-- `--job-type=fulltime|parttime|contract|internship`
-- `--hours`
-- `--country`
-- `--format=csv|json|md`
-- `--links=short|full`
-- `--output` (aliases: `--out`, `--file`) (write the primary output to a file)
-- `--proxies` (comma-separated URLs)
-- `--seen` (path to seen jobs JSON history)
-- `--new-only` (output only unseen jobs; requires `--seen`)
-- `--new-out` (also write unseen jobs (`A - B`) to a JSON file; requires `--seen`)
-- `--seen-update` (update `--seen` by merging in newly discovered unseen jobs after the search completes; requires `--seen`)
+| Flag | Description |
+| --- | --- |
+| `--location` | Job location filter. |
+| `--country` | Country code filter (used by Indeed/Glassdoor). |
+| `--limit` | Maximum results fetched per query. |
+| `--offset` | Pagination offset. |
+| `--remote` | Remote-only roles. |
+| `--job-type=fulltime\|parttime\|contract\|internship` | Job type filter. |
+| `--hours` | Jobs posted in the last N hours. |
+| `--format=csv\|json\|md` | Explicit output format override. |
+| `--links=short\|full` | Table link rendering style. |
+| `--output`, `-o` | Write primary output to a file. |
+| `--out` | Alias for `--output`. |
+| `--file` | Alias for `--output`. |
+| `--proxies` | Comma-separated proxy URLs. |
+| `--seen` | Path to seen jobs JSON history file. |
+| `--new-only` | Output only unseen jobs (`A - B`); requires `--seen`. |
+| `--new-out` | Also write unseen jobs (`A - B`) to JSON; requires `--seen`. |
+| `--seen-update` | Merge newly discovered unseen jobs into `--seen`; requires `--seen`. |
+| `--sites` | Comma-separated site list for `search` only (default: `all`). |
+
+Seen command flags:
+
+| Command | Flag | Description |
+| --- | --- | --- |
+| `seen diff` | `--new` | Path to new jobs JSON (`A`). |
+| `seen diff` | `--seen` | Path to seen jobs JSON (`B`); missing file is treated as empty. |
+| `seen diff` | `--out` | Output path for unseen jobs JSON (`C = A - B`). |
+| `seen diff` | `--stats` | Print comparison stats. |
+| `seen update` | `--seen` | Path to seen jobs JSON (`B`); missing file is treated as empty. |
+| `seen update` | `--input` | Input jobs JSON to merge into seen history. |
+| `seen update` | `--out` | Output path for updated seen jobs JSON. |
+| `seen update` | `--stats` | Print merge stats. |
+
+Proxy command flags:
+
+| Command | Flag | Description |
+| --- | --- | --- |
+| `proxies check` | `--target` | Target URL to validate proxies against (default: `https://www.google.com`). |
+| `proxies check` | `--timeout` | Per-request timeout in seconds (default: `15`). |
 
 Notes:
 
 - `search <query>` supports comma-separated query lists (max `10`), e.g. `"backend,platform,sre"`.
-
-Seen flags:
-
-- `--stats` (print diff/merge stats to stdout)
 
 ## Seen Jobs Workflow
 
