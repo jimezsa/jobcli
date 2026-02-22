@@ -86,6 +86,32 @@ Also supported:
 ]
 ```
 
+Full profile (queries + defaults):
+
+```json
+{
+  "job_titles": ["software engineer", "hardware engineer"],
+  "search_options": {
+    "location": "Munich, Germany",
+    "limit": 5,
+    "hours": 28,
+    "seen": "jobs_seen.json",
+    "seen_update": true,
+    "new_only": true,
+    "output": "jobs_new.json"
+  },
+  "global_options": {
+    "json": true
+  }
+}
+```
+
+Then run only:
+
+```bash
+jobcli search --query-file queries.json
+```
+
 ## Commands
 
 - `jobcli version`
@@ -137,7 +163,7 @@ Search and site flags (`search`, `linkedin`, `indeed`, `glassdoor`, `ziprecruite
 | `--out` | Alias for `--output`. |
 | `--file` | Alias for `--output`. |
 | `--proxies` | Comma-separated proxy URLs. |
-| `--query-file` | Path to JSON queries file (top-level string array or object with `job_titles` string array). |
+| `--query-file` | Path to JSON queries file (array, `job_titles` object, or full profile with `search_options`/`global_options`). |
 | `--seen` | Path to seen jobs JSON history file. |
 | `--new-only` | Output only unseen jobs (`A - B`); requires `--seen`. |
 | `--new-out` | Also write unseen jobs (`A - B`) to JSON; requires `--seen`. |
@@ -167,7 +193,8 @@ Proxy command flags:
 Notes:
 
 - `search` supports comma-separated positional query lists (max `10`), e.g. `"backend,platform,sre"`.
-- `--query-file` accepts either `["backend","platform"]` or `{"job_titles":["backend","platform"]}`.
+- `--query-file` accepts `["backend","platform"]`, `{"job_titles":["backend","platform"]}`, or a full profile object with optional `search_options` and `global_options`.
+- Option precedence is: explicit CLI flags > query-file defaults > env/config defaults.
 - Positional and file queries can be combined; positional entries are applied first, then deduped case-insensitively.
 
 ## Seen Jobs Workflow

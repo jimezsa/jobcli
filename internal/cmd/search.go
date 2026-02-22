@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -19,7 +20,9 @@ import (
 	"github.com/jimezsa/jobcli/internal/network"
 	"github.com/jimezsa/jobcli/internal/scraper"
 	"github.com/jimezsa/jobcli/internal/seen"
+	"github.com/jimezsa/jobcli/internal/ui"
 	"github.com/muesli/termenv"
+	"github.com/rs/zerolog"
 )
 
 type SearchCmd struct {
@@ -48,7 +51,7 @@ type SearchOptions struct {
 	Out        string `name:"out" help:"Alias for --output."`
 	File       string `name:"file" help:"Alias for --output."`
 	Proxies    string `help:"Comma-separated proxy URLs." env:"JOBCLI_PROXIES"`
-	QueryFile  string `help:"Path to JSON file with queries (top-level string array or object with job_titles array)."`
+	QueryFile  string `help:"Path to JSON file with queries or a full search profile."`
 	Seen       string `help:"Path to seen jobs JSON file."`
 	NewOnly    bool   `help:"Output only unseen jobs (requires --seen)."`
 	NewOut     string `help:"Write unseen jobs JSON to a file (requires --seen)."`
@@ -58,14 +61,25 @@ type SearchOptions struct {
 const maxQueries = 10
 
 func (s *SearchCmd) Run(ctx *Context) error {
-	return runSearch(ctx, s.Query, s.Sites, s.SearchOptions)
+	return runSearch(ctx, s.Query, s.Sites, s.SearchOptions, true)
 }
 
 func (s *SiteCmd) Run(ctx *Context) error {
-	return runSearch(ctx, s.Query, s.Site, s.SearchOptions)
+	return runSearch(ctx, s.Query, s.Site, s.SearchOptions, false)
 }
 
-func runSearch(ctx *Context, query string, sitesArg string, opts SearchOptions) error {
+func runSearch(ctx *Context, query string, sitesArg string, opts SearchOptions, allowSitesOverride bool) error {
+	queryConfig, err := loadQueryFileConfigIfProvided(opts.QueryFile)
+	if err != nil {
+		return err
+	}
+
+	providedFlags := collectProvidedFlags(os.Args[1:])
+	opts, sitesArg, err = applyQueryFileDefaults(ctx, opts, sitesArg, queryConfig, allowSitesOverride, providedFlags)
+	if err != nil {
+		return err
+	}
+
 	if opts.NewOnly && strings.TrimSpace(opts.Seen) == "" {
 		return fmt.Errorf("--new-only requires --seen")
 	}
@@ -76,7 +90,7 @@ func runSearch(ctx *Context, query string, sitesArg string, opts SearchOptions) 
 		return fmt.Errorf("--seen-update requires --seen")
 	}
 
-	queries, err := resolveQueries(query, opts.QueryFile)
+	queries, err := mergeAndNormalizeQueries(splitQueries(query), queryConfig.Queries)
 	if err != nil {
 		return err
 	}
@@ -287,21 +301,321 @@ func countJobsBySite(jobs []models.Job) []siteCount {
 	return counts
 }
 
+type queryFileConfig struct {
+	Queries []string
+	Search  queryFileSearchOptions
+	Global  queryFileGlobalOptions
+}
+
+type queryFileSearchOptions struct {
+	Location   *string `json:"location"`
+	Country    *string `json:"country"`
+	Sites      *string `json:"sites"`
+	Limit      *int    `json:"limit"`
+	Offset     *int    `json:"offset"`
+	Remote     *bool   `json:"remote"`
+	JobType    *string `json:"job_type"`
+	Hours      *int    `json:"hours"`
+	Format     *string `json:"format"`
+	Links      *string `json:"links"`
+	Output     *string `json:"output"`
+	Proxies    *string `json:"proxies"`
+	Seen       *string `json:"seen"`
+	NewOnly    *bool   `json:"new_only"`
+	NewOut     *string `json:"new_out"`
+	SeenUpdate *bool   `json:"seen_update"`
+}
+
+type queryFileGlobalOptions struct {
+	JSON    *bool   `json:"json"`
+	Plain   *bool   `json:"plain"`
+	Color   *string `json:"color"`
+	Verbose *bool   `json:"verbose"`
+}
+
+func applyQueryFileDefaults(ctx *Context, opts SearchOptions, sitesArg string, fileCfg queryFileConfig, allowSitesOverride bool, providedFlags map[string]bool) (SearchOptions, string, error) {
+	cliProvided := func(names ...string) bool {
+		return hasAnyProvidedFlag(providedFlags, names...)
+	}
+
+	if fileCfg.Search.Location != nil && !cliProvided("--location") {
+		opts.Location = *fileCfg.Search.Location
+	}
+	if fileCfg.Search.Country != nil && !cliProvided("--country") {
+		opts.Country = *fileCfg.Search.Country
+	}
+	if fileCfg.Search.Limit != nil && !cliProvided("--limit") {
+		opts.Limit = *fileCfg.Search.Limit
+	}
+	if fileCfg.Search.Offset != nil && !cliProvided("--offset") {
+		opts.Offset = *fileCfg.Search.Offset
+	}
+	if fileCfg.Search.Remote != nil && !cliProvided("--remote") {
+		opts.Remote = *fileCfg.Search.Remote
+	}
+	if fileCfg.Search.JobType != nil && !cliProvided("--job-type") {
+		opts.JobType = strings.ToLower(strings.TrimSpace(*fileCfg.Search.JobType))
+	}
+	if fileCfg.Search.Hours != nil && !cliProvided("--hours") {
+		opts.Hours = *fileCfg.Search.Hours
+	}
+	if fileCfg.Search.Format != nil && !cliProvided("--format") {
+		opts.Format = strings.ToLower(strings.TrimSpace(*fileCfg.Search.Format))
+	}
+	if fileCfg.Search.Links != nil && !cliProvided("--links") {
+		opts.Links = strings.ToLower(strings.TrimSpace(*fileCfg.Search.Links))
+	}
+	if fileCfg.Search.Proxies != nil && !cliProvided("--proxies") {
+		opts.Proxies = *fileCfg.Search.Proxies
+	}
+	if fileCfg.Search.Seen != nil && !cliProvided("--seen") {
+		opts.Seen = *fileCfg.Search.Seen
+	}
+	if fileCfg.Search.NewOnly != nil && !cliProvided("--new-only") {
+		opts.NewOnly = *fileCfg.Search.NewOnly
+	}
+	if fileCfg.Search.NewOut != nil && !cliProvided("--new-out") {
+		opts.NewOut = *fileCfg.Search.NewOut
+	}
+	if fileCfg.Search.SeenUpdate != nil && !cliProvided("--seen-update") {
+		opts.SeenUpdate = *fileCfg.Search.SeenUpdate
+	}
+	if fileCfg.Search.Output != nil && !cliProvided("--output", "--out", "--file", "-o") {
+		opts.Output = *fileCfg.Search.Output
+		opts.Out = ""
+		opts.File = ""
+	}
+	if allowSitesOverride && fileCfg.Search.Sites != nil && !cliProvided("--sites") {
+		sitesArg = strings.TrimSpace(*fileCfg.Search.Sites)
+	}
+
+	if ctx == nil {
+		return opts, sitesArg, nil
+	}
+
+	if fileCfg.Global.JSON != nil && !cliProvided("--json") {
+		ctx.JSONOutput = *fileCfg.Global.JSON
+	}
+	if fileCfg.Global.Plain != nil && !cliProvided("--plain") {
+		ctx.PlainText = *fileCfg.Global.Plain
+	}
+	if fileCfg.Global.Verbose != nil && !cliProvided("--verbose") {
+		ctx.Verbose = *fileCfg.Global.Verbose
+	}
+	if fileCfg.Global.Color != nil && !cliProvided("--color") {
+		ctx.ColorMode = ui.NormalizeColorMode(*fileCfg.Global.Color)
+	}
+
+	if ctx.JSONOutput && ctx.PlainText {
+		return SearchOptions{}, "", fmt.Errorf("cannot combine --json and --plain")
+	}
+
+	level := zerolog.InfoLevel
+	if ctx.Verbose {
+		level = zerolog.DebugLevel
+	}
+	zerolog.SetGlobalLevel(level)
+
+	if ctx.Out != nil && ctx.Err != nil {
+		disableColor := ctx.JSONOutput || ctx.PlainText
+		ctx.UI = ui.New(ctx.Out, ctx.Err, ctx.ColorMode, disableColor)
+	}
+
+	return opts, sitesArg, nil
+}
+
+func collectProvidedFlags(args []string) map[string]bool {
+	flags := make(map[string]bool)
+	for _, arg := range args {
+		if arg == "--" {
+			break
+		}
+		if strings.HasPrefix(arg, "--") {
+			flag := arg
+			if idx := strings.Index(flag, "="); idx > 0 {
+				flag = flag[:idx]
+			}
+			flags[flag] = true
+			continue
+		}
+		if arg == "-o" {
+			flags[arg] = true
+		}
+	}
+	return flags
+}
+
+func hasAnyProvidedFlag(providedFlags map[string]bool, names ...string) bool {
+	for _, name := range names {
+		if providedFlags[name] {
+			return true
+		}
+	}
+	return false
+}
+
 func parseQueries(raw string) ([]string, error) {
 	return mergeAndNormalizeQueries(splitQueries(raw), nil)
 }
 
 func resolveQueries(raw string, queryFile string) ([]string, error) {
-	positionalQueries := splitQueries(raw)
-	var fileQueries []string
-	if strings.TrimSpace(queryFile) != "" {
-		var err error
-		fileQueries, err = loadQueriesFromJSON(queryFile)
+	fileCfg, err := loadQueryFileConfigIfProvided(queryFile)
+	if err != nil {
+		return nil, err
+	}
+	return mergeAndNormalizeQueries(splitQueries(raw), fileCfg.Queries)
+}
+
+func loadQueryFileConfigIfProvided(queryFile string) (queryFileConfig, error) {
+	if strings.TrimSpace(queryFile) == "" {
+		return queryFileConfig{}, nil
+	}
+	return loadQueryFileConfig(queryFile)
+}
+
+func loadQueryFileConfig(path string) (queryFileConfig, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return queryFileConfig{}, fmt.Errorf("read --query-file %q: %w", path, err)
+	}
+
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) == 0 {
+		return queryFileConfig{}, fmt.Errorf("invalid --query-file %q: expected top-level string array or object with \"job_titles\" string array", path)
+	}
+
+	switch trimmed[0] {
+	case '[':
+		var values []any
+		if err := json.Unmarshal(trimmed, &values); err != nil {
+			return queryFileConfig{}, fmt.Errorf("parse --query-file %q: %w", path, err)
+		}
+		queries, err := parseStringArray(values, path, "root array")
 		if err != nil {
-			return nil, err
+			return queryFileConfig{}, err
+		}
+		return queryFileConfig{Queries: queries}, nil
+	case '{':
+		cfg, err := parseQueryFileObject(path, trimmed)
+		if err != nil {
+			return queryFileConfig{}, err
+		}
+		if err := validateQueryFileConfig(path, cfg); err != nil {
+			return queryFileConfig{}, err
+		}
+		return cfg, nil
+	default:
+		return queryFileConfig{}, fmt.Errorf("invalid --query-file %q: expected top-level string array or object with \"job_titles\" string array", path)
+	}
+}
+
+func parseQueryFileObject(path string, data []byte) (queryFileConfig, error) {
+	var root map[string]json.RawMessage
+	if err := json.Unmarshal(data, &root); err != nil {
+		return queryFileConfig{}, fmt.Errorf("parse --query-file %q: %w", path, err)
+	}
+
+	allowedFields := map[string]struct{}{
+		"job_titles":     {},
+		"search_options": {},
+		"global_options": {},
+	}
+	for field := range root {
+		if _, ok := allowedFields[field]; ok {
+			continue
+		}
+		return queryFileConfig{}, fmt.Errorf("invalid --query-file %q: unknown field %q", path, field)
+	}
+
+	cfg := queryFileConfig{}
+
+	if rawTitles, ok := root["job_titles"]; ok {
+		var titles []any
+		if err := json.Unmarshal(rawTitles, &titles); err != nil {
+			return queryFileConfig{}, fmt.Errorf("invalid --query-file %q: field \"job_titles\" must be an array of strings", path)
+		}
+		queries, err := parseStringArray(titles, path, "job_titles")
+		if err != nil {
+			return queryFileConfig{}, err
+		}
+		cfg.Queries = queries
+	}
+
+	if rawSearch, ok := root["search_options"]; ok {
+		if err := unmarshalStrict(rawSearch, &cfg.Search); err != nil {
+			return queryFileConfig{}, fmt.Errorf("invalid --query-file %q: field \"search_options\": %w", path, err)
 		}
 	}
-	return mergeAndNormalizeQueries(positionalQueries, fileQueries)
+
+	if rawGlobal, ok := root["global_options"]; ok {
+		if err := unmarshalStrict(rawGlobal, &cfg.Global); err != nil {
+			return queryFileConfig{}, fmt.Errorf("invalid --query-file %q: field \"global_options\": %w", path, err)
+		}
+	}
+
+	return cfg, nil
+}
+
+func validateQueryFileConfig(path string, cfg queryFileConfig) error {
+	if cfg.Search.JobType != nil {
+		jobType := strings.ToLower(strings.TrimSpace(*cfg.Search.JobType))
+		switch jobType {
+		case "", "fulltime", "parttime", "contract", "internship":
+		default:
+			return fmt.Errorf("invalid --query-file %q: field \"search_options.job_type\" must be one of fulltime, parttime, contract, internship, or empty", path)
+		}
+	}
+
+	if cfg.Search.Format != nil {
+		format := strings.ToLower(strings.TrimSpace(*cfg.Search.Format))
+		switch format {
+		case "", "csv", "json", "md":
+		default:
+			return fmt.Errorf("invalid --query-file %q: field \"search_options.format\" must be one of csv, json, md, or empty", path)
+		}
+	}
+
+	if cfg.Search.Links != nil {
+		links := strings.ToLower(strings.TrimSpace(*cfg.Search.Links))
+		if links != "short" && links != "full" {
+			return fmt.Errorf("invalid --query-file %q: field \"search_options.links\" must be one of short or full", path)
+		}
+	}
+
+	if cfg.Global.Color != nil {
+		color := strings.ToLower(strings.TrimSpace(*cfg.Global.Color))
+		switch color {
+		case "auto", "always", "never":
+		default:
+			return fmt.Errorf("invalid --query-file %q: field \"global_options.color\" must be one of auto, always, or never", path)
+		}
+	}
+
+	if cfg.Global.JSON != nil && cfg.Global.Plain != nil && *cfg.Global.JSON && *cfg.Global.Plain {
+		return fmt.Errorf("invalid --query-file %q: global_options.json and global_options.plain cannot both be true", path)
+	}
+
+	return nil
+}
+
+func loadQueriesFromJSON(path string) ([]string, error) {
+	cfg, err := loadQueryFileConfig(path)
+	if err != nil {
+		return nil, err
+	}
+	return cfg.Queries, nil
+}
+
+func unmarshalStrict(data []byte, dst any) error {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(dst); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		return fmt.Errorf("unexpected trailing JSON value")
+	}
+	return nil
 }
 
 func splitQueries(raw string) []string {
@@ -351,35 +665,6 @@ func mergeAndNormalizeQueries(primary []string, secondary []string) ([]string, e
 	}
 
 	return queries, nil
-}
-
-func loadQueriesFromJSON(path string) ([]string, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("read --query-file %q: %w", path, err)
-	}
-
-	var decoded any
-	if err := json.Unmarshal(data, &decoded); err != nil {
-		return nil, fmt.Errorf("parse --query-file %q: %w", path, err)
-	}
-
-	switch value := decoded.(type) {
-	case []any:
-		return parseStringArray(value, path, "root array")
-	case map[string]any:
-		rawTitles, ok := value["job_titles"]
-		if !ok {
-			return nil, fmt.Errorf("invalid --query-file %q: expected top-level string array or object with \"job_titles\" string array", path)
-		}
-		titles, ok := rawTitles.([]any)
-		if !ok {
-			return nil, fmt.Errorf("invalid --query-file %q: field \"job_titles\" must be an array of strings", path)
-		}
-		return parseStringArray(titles, path, "job_titles")
-	default:
-		return nil, fmt.Errorf("invalid --query-file %q: expected top-level string array or object with \"job_titles\" string array", path)
-	}
 }
 
 func parseStringArray(values []any, path string, fieldName string) ([]string, error) {

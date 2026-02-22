@@ -84,7 +84,7 @@ make
 - `--links=short|full`
 - `--output` (aliases: `--out`, `--file`) (write the primary output to a file)
 - `--proxies` (comma-separated URLs)
-- `--query-file` (JSON path with either a top-level string array or object with `job_titles` string array)
+- `--query-file` (JSON path with query array, `job_titles` object, or full profile object with `search_options`/`global_options`)
 - `--seen` (path to seen jobs JSON history)
 - `--new-only` (output only unseen jobs; requires `--seen`)
 - `--new-out` (also write unseen jobs (`A - B`) to a JSON file; requires `--seen`)
@@ -93,7 +93,8 @@ make
 Notes:
 
 - `search` supports comma-separated positional query lists (max `10`), e.g. `"backend,platform,sre"`.
-- `--query-file` accepts either `["backend","platform"]` or `{"job_titles":["backend","platform"]}`.
+- `--query-file` accepts `["backend","platform"]`, `{"job_titles":["backend","platform"]}`, or a full profile object.
+- In full profile mode, defaults are applied with precedence: CLI flags > query-file defaults > env/config defaults.
 - Positional and file queries can be combined; positional entries are applied first, then deduped case-insensitively.
 - If you use `--new-only --json --output jobs_new.json`, you usually don’t need `--new-out`.
 - Use `--new-out` when you want to keep the primary output as "all jobs" (table/CSV/etc) but still persist unseen jobs for `jobcli seen update`.

@@ -189,6 +189,28 @@ func TestLoadQueriesFromJSON(t *testing.T) {
 		}
 	})
 
+	t.Run("extended object with profile options", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "queries.json")
+		content := `{
+  "job_titles": ["Backend Engineer", "SRE"],
+  "search_options": {"location":"Munich, Germany","limit":5},
+  "global_options": {"json":true}
+}`
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatalf("WriteFile() error = %v", err)
+		}
+
+		got, err := loadQueriesFromJSON(path)
+		if err != nil {
+			t.Fatalf("loadQueriesFromJSON() error = %v", err)
+		}
+		want := []string{"Backend Engineer", "SRE"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("loadQueriesFromJSON() = %#v, want %#v", got, want)
+		}
+	})
+
 	t.Run("invalid json", func(t *testing.T) {
 		dir := t.TempDir()
 		path := filepath.Join(dir, "queries.json")
@@ -218,8 +240,8 @@ func TestLoadQueriesFromJSON(t *testing.T) {
 		if err == nil {
 			t.Fatalf("loadQueriesFromJSON() error = nil, want error")
 		}
-		if !strings.Contains(err.Error(), "expected top-level string array or object with \"job_titles\" string array") {
-			t.Fatalf("loadQueriesFromJSON() error = %q, want schema message", err.Error())
+		if !strings.Contains(err.Error(), "unknown field \"queries\"") {
+			t.Fatalf("loadQueriesFromJSON() error = %q, want unknown-field message", err.Error())
 		}
 	})
 
@@ -309,6 +331,213 @@ func TestResolveQueries(t *testing.T) {
 		}
 		if err.Error() != "at least one non-empty query is required" {
 			t.Fatalf("resolveQueries() error = %q, want %q", err.Error(), "at least one non-empty query is required")
+		}
+	})
+
+	t.Run("query-file with options only and positional query works", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "queries.json")
+		content := `{
+  "search_options": {"location":"Munich, Germany"},
+  "global_options": {"json":true}
+}`
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatalf("WriteFile() error = %v", err)
+		}
+
+		got, err := resolveQueries("backend engineer", path)
+		if err != nil {
+			t.Fatalf("resolveQueries() error = %v", err)
+		}
+		want := []string{"backend engineer"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("resolveQueries() = %#v, want %#v", got, want)
+		}
+	})
+}
+
+func TestApplyQueryFileDefaults(t *testing.T) {
+	t.Run("applies query-file defaults when CLI flags are not provided", func(t *testing.T) {
+		location := "Munich, Germany"
+		limit := 5
+		hours := 28
+		seenPath := "jobs_seen.json"
+		output := "jobs_new.json"
+		newOnly := true
+		seenUpdate := true
+		jsonOutput := true
+		color := "never"
+
+		ctx := &Context{
+			Out:       io.Discard,
+			Err:       io.Discard,
+			Verbose:   false,
+			ColorMode: "auto",
+		}
+		opts := SearchOptions{
+			Location: "Berlin, Germany",
+			Limit:    20,
+		}
+		cfg := queryFileConfig{
+			Search: queryFileSearchOptions{
+				Location:   &location,
+				Limit:      &limit,
+				Hours:      &hours,
+				Seen:       &seenPath,
+				Output:     &output,
+				NewOnly:    &newOnly,
+				SeenUpdate: &seenUpdate,
+			},
+			Global: queryFileGlobalOptions{
+				JSON:  &jsonOutput,
+				Color: &color,
+			},
+		}
+
+		gotOpts, gotSites, err := applyQueryFileDefaults(ctx, opts, "all", cfg, true, map[string]bool{})
+		if err != nil {
+			t.Fatalf("applyQueryFileDefaults() error = %v", err)
+		}
+
+		if gotOpts.Location != location || gotOpts.Limit != limit || gotOpts.Hours != hours {
+			t.Fatalf("search defaults were not applied: %+v", gotOpts)
+		}
+		if gotOpts.Seen != seenPath || gotOpts.Output != output || !gotOpts.NewOnly || !gotOpts.SeenUpdate {
+			t.Fatalf("seen/output defaults were not applied: %+v", gotOpts)
+		}
+		if gotSites != "all" {
+			t.Fatalf("sites changed unexpectedly: got %q", gotSites)
+		}
+		if !ctx.JSONOutput {
+			t.Fatalf("expected ctx.JSONOutput=true from query-file defaults")
+		}
+		if ctx.ColorMode != "never" {
+			t.Fatalf("expected ctx.ColorMode=never, got %q", ctx.ColorMode)
+		}
+	})
+
+	t.Run("CLI flags override query-file defaults", func(t *testing.T) {
+		location := "Munich, Germany"
+		limit := 5
+		output := "jobs_new.json"
+		sites := "linkedin"
+		jsonOutput := true
+		verbose := true
+
+		ctx := &Context{
+			Out:        io.Discard,
+			Err:        io.Discard,
+			JSONOutput: false,
+			Verbose:    false,
+			ColorMode:  "auto",
+		}
+		opts := SearchOptions{
+			Location: "Madrid, Spain",
+			Limit:    25,
+			Output:   "explicit.json",
+		}
+		cfg := queryFileConfig{
+			Search: queryFileSearchOptions{
+				Location: &location,
+				Limit:    &limit,
+				Output:   &output,
+				Sites:    &sites,
+			},
+			Global: queryFileGlobalOptions{
+				JSON:    &jsonOutput,
+				Verbose: &verbose,
+			},
+		}
+		provided := map[string]bool{
+			"--location": true,
+			"--limit":    true,
+			"--output":   true,
+			"--sites":    true,
+			"--json":     true,
+			"--verbose":  true,
+		}
+
+		gotOpts, gotSites, err := applyQueryFileDefaults(ctx, opts, "glassdoor", cfg, true, provided)
+		if err != nil {
+			t.Fatalf("applyQueryFileDefaults() error = %v", err)
+		}
+
+		if gotOpts.Location != "Madrid, Spain" || gotOpts.Limit != 25 || gotOpts.Output != "explicit.json" {
+			t.Fatalf("CLI values should win, got %+v", gotOpts)
+		}
+		if gotSites != "glassdoor" {
+			t.Fatalf("CLI sites should win, got %q", gotSites)
+		}
+		if ctx.JSONOutput {
+			t.Fatalf("CLI json flag presence should prevent query-file override")
+		}
+		if ctx.Verbose {
+			t.Fatalf("CLI verbose flag presence should prevent query-file override")
+		}
+	})
+
+	t.Run("site command ignores search_options.sites", func(t *testing.T) {
+		sites := "linkedin,indeed"
+		ctx := &Context{
+			Out:       io.Discard,
+			Err:       io.Discard,
+			ColorMode: "auto",
+		}
+		cfg := queryFileConfig{
+			Search: queryFileSearchOptions{
+				Sites: &sites,
+			},
+		}
+
+		_, gotSites, err := applyQueryFileDefaults(ctx, SearchOptions{}, "stepstone", cfg, false, map[string]bool{})
+		if err != nil {
+			t.Fatalf("applyQueryFileDefaults() error = %v", err)
+		}
+		if gotSites != "stepstone" {
+			t.Fatalf("site command should keep fixed site, got %q", gotSites)
+		}
+	})
+}
+
+func TestLoadQueryFileConfigValidation(t *testing.T) {
+	t.Run("rejects conflicting global json/plain", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "queries.json")
+		content := `{
+  "job_titles": ["backend"],
+  "global_options": {"json": true, "plain": true}
+}`
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatalf("WriteFile() error = %v", err)
+		}
+
+		_, err := loadQueryFileConfig(path)
+		if err == nil {
+			t.Fatalf("loadQueryFileConfig() error = nil, want error")
+		}
+		if !strings.Contains(err.Error(), "cannot both be true") {
+			t.Fatalf("loadQueryFileConfig() error = %q, want conflict error", err.Error())
+		}
+	})
+
+	t.Run("rejects invalid enum values", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "queries.json")
+		content := `{
+  "job_titles": ["backend"],
+  "search_options": {"links":"tiny"},
+  "global_options": {"color":"blue"}
+}`
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatalf("WriteFile() error = %v", err)
+		}
+
+		_, err := loadQueryFileConfig(path)
+		if err == nil {
+			t.Fatalf("loadQueryFileConfig() error = nil, want error")
+		}
+		if !strings.Contains(err.Error(), "search_options.links") {
+			t.Fatalf("loadQueryFileConfig() error = %q, want links validation error", err.Error())
 		}
 	})
 }
