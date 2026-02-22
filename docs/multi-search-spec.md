@@ -272,3 +272,180 @@ Regression tests:
 6. Invalid/missing/unsupported query file formats fail fast with clear errors.
 7. Usage docs include at least one `--query-file` example and semantics note for
    combined-source query handling.
+
+---
+
+## V3 Plan: Query File As Full Search Profile (No Code Yet)
+
+## Objective (v3)
+
+Allow this:
+
+```bash
+jobcli search --query-file queries.json
+```
+
+to behave the same as:
+
+```bash
+jobcli search --query-file queries.json --location "Munich, Germany" --limit 5 --hours 28 \
+  --seen jobs_seen.json --seen-update --new-only --json --output jobs_new.json
+```
+
+by storing search defaults in `queries.json`.
+
+## Proposed JSON Schema (Backward Compatible)
+
+Continue supporting existing query-only formats:
+
+- `["backend","platform"]`
+- `{"job_titles":["backend","platform"]}`
+
+Add an extended object format:
+
+```json
+{
+  "job_titles": [
+    "software engineer",
+    "hardware engineer"
+  ],
+  "search_options": {
+    "location": "Munich, Germany",
+    "country": "de",
+    "sites": "all",
+    "limit": 5,
+    "offset": 0,
+    "remote": false,
+    "job_type": "",
+    "hours": 28,
+    "format": "",
+    "links": "full",
+    "output": "jobs_new.json",
+    "proxies": "",
+    "seen": "jobs_seen.json",
+    "new_only": true,
+    "new_out": "",
+    "seen_update": true
+  },
+  "global_options": {
+    "json": true,
+    "plain": false,
+    "color": "auto",
+    "verbose": false
+  }
+}
+```
+
+Notes:
+
+- `output` is the canonical JSON field for `--output/--out/--file`.
+- `sites` in file applies only to `search`; site commands ignore it.
+- Unknown fields should fail validation with a clear error.
+
+## Option Precedence Rules
+
+Final option values should be resolved in this order:
+
+1. Explicit CLI args/flags (highest priority).
+2. `query-file` defaults (`search_options`, `global_options`).
+3. Environment variables (`JOBCLI_*`).
+4. Config file defaults.
+5. Built-in defaults.
+
+Examples:
+
+- CLI `--limit 20` overrides file `search_options.limit=5`.
+- CLI `--new-only` overrides file `search_options.new_only=false`.
+- If CLI omits `--location`, file `search_options.location` is used.
+
+## Functional Rules
+
+1. Query resolution:
+   - Keep current behavior (positional queries + file `job_titles` merge/dedupe).
+   - If positional query is absent, use `job_titles` from file.
+2. Search options:
+   - Apply `search_options` defaults before running `runSearch`.
+   - Keep existing validation constraints (`--new-only` requires `--seen`, path conflict checks, etc.).
+3. Global options:
+   - Apply `global_options` before output mode resolution.
+   - Preserve current `--json` + `--plain` mutual exclusion.
+4. Output behavior:
+   - File-driven JSON mode must still keep stdout/stderr compatibility rules unchanged.
+5. Backward compatibility:
+   - Existing array/object query-file formats continue to work unchanged.
+
+## Validation Rules (v3)
+
+- `job_titles` (if present) must be string array.
+- `search_options.limit`, `offset`, `hours` must be numeric.
+- Enum fields must match existing CLI enums:
+  - `job_type`: `fulltime|parttime|contract|internship|""`
+  - `format`: `csv|json|md|""`
+  - `links`: `short|full`
+  - `color`: `auto|always|never`
+- Reject invalid `global_options` combinations (`json=true` and `plain=true`).
+- Reject invalid schema with explicit field-level errors.
+
+## Implementation Plan (v3)
+
+### 1) Introduce profile parser for `--query-file`
+
+- Expand query-file decoding to support:
+  - current query-only schemas
+  - new extended object with `search_options` and `global_options`
+- Return one structured result:
+  - `queries []string`
+  - optional option defaults for search/global layers
+
+### 2) Add option-merge layer before `runSearch`
+
+- Resolve global defaults into CLI runtime context.
+- Resolve search defaults into `SearchOptions`.
+- Keep CLI flags as highest priority.
+
+### 3) Preserve current behavior paths
+
+- Existing commands with explicit flags must keep current behavior.
+- Existing minimal query files must continue to behave exactly as today.
+
+### 4) Add strict schema/enum validation
+
+- Fail fast on bad types, unknown keys, invalid enum values.
+- Keep errors specific and actionable (field name + expected type/value).
+
+### 5) Documentation updates
+
+- Update `README.md` with:
+  - minimal query file example
+  - full profile query file example
+  - precedence table (CLI vs file vs env)
+- Update `docs/usage.md` with file-profile examples.
+- Keep this spec as source of truth.
+
+## Test Plan (v3)
+
+- Parsing tests:
+  - minimal array schema still works
+  - minimal `job_titles` object still works
+  - full profile schema parses and maps correctly
+  - invalid field types/enums fail with clear errors
+- Precedence tests:
+  - CLI overrides query-file defaults
+  - query-file overrides env/config defaults
+- Behavior tests:
+  - `jobcli search --query-file queries.json` equals the long explicit command behavior
+  - seen workflow (`seen`, `new_only`, `seen_update`, `output`) matches explicit flags
+  - global output mode (`json/plain/color/verbose`) matches explicit flags
+- Regression tests:
+  - existing non-profile query-file usage remains unchanged
+  - existing positional-only and positional+file query merge remains unchanged
+
+## Acceptance Criteria (v3)
+
+1. Running `jobcli search --query-file queries.json` with full profile options
+   yields the same behavior as passing those flags explicitly on CLI.
+2. CLI flags still override values provided by `queries.json`.
+3. Existing query-only JSON formats remain fully supported.
+4. Invalid profile schema/values fail fast with clear field-level errors.
+5. Docs include both minimal and full-profile query-file examples plus
+   precedence rules.
