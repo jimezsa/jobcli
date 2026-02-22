@@ -1,0 +1,20 @@
+{
+  "job_titles": ["software engineer", "hardware engineer", "data scientist"],
+  "search_options": {
+    "location": "Munich, Germany",
+    "country": "de",
+    "sites": "all",
+    "limit": 5,
+    "hours": 28,
+    "seen": "jobs_seen.json",
+    "seen_update": true,
+    "new_only": true,
+    "output": "jobs_new.json"
+  },
+  "global_options": {
+    "json": true,
+    "plain": false,
+    "color": "auto",
+    "verbose": false
+  }
+}
