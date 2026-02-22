@@ -244,7 +244,7 @@ func printSearchSummary(ctx *Context, jobs []models.Job) {
 	if ctx == nil || ctx.Err == nil {
 		return
 	}
-	_, _ = fmt.Fprintf(ctx.Err, "%s\n", formatSearchSummary(jobs))
+	_, _ = fmt.Fprintf(ctx.Err, "\n%s\n", formatSearchSummary(jobs))
 }
 
 func formatSearchSummary(jobs []models.Job) string {
