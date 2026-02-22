@@ -3,20 +3,32 @@
 ## Objective
 
 Implement multi-query search support for `jobcli search` (and site commands that
-share `runSearch`) so users can run one command with multiple keywords, e.g.:
+share `runSearch`) so users can run one command with multiple keywords, either
+from CLI input or a JSON file with job titles.
+
+CLI example:
 
 ```bash
 jobcli search "software engineer, hardware engineer, data scientic" --location "Munich, Germany"
 ```
 
-The feature must preserve existing single-query behavior while adding predictable,
-documented behavior for comma-separated query lists.
+JSON file example:
+
+```bash
+jobcli search --query-file queries.json --location "Munich, Germany"
+```
+
+The feature must preserve existing single-query behavior while adding predictable
+and documented behavior for comma-separated query lists and file-based query
+input.
 
 ## Scope
 
 In scope:
 
 - Parse a single positional `<query>` argument into multiple queries when comma-separated.
+- Load job-title queries from a JSON file via a CLI flag.
+- Merge query input from positional arg and JSON file into one normalized query list.
 - Execute searches for each parsed query using existing scraper flow.
 - Merge results into one output stream.
 - Keep compatibility with existing output and seen-history flags.
@@ -26,6 +38,7 @@ Out of scope (v1):
 - Boolean query syntax (`AND`, `OR`, parentheses).
 - Weighted ranking across query relevance.
 - Query-specific filters in a single command (different location/limit per query).
+- Nested/complex JSON query objects beyond the supported schema.
 
 ## Command Surface
 
@@ -42,17 +55,37 @@ Existing commands continue to work:
 
 Multi-search is triggered by a comma-separated `<query>` value.
 
-## Query Parsing Rules (v1)
+New optional flag (for `search` and site commands):
+
+- `--query-file <path>`: load job-title queries from JSON.
+
+Input precedence and merge behavior:
+
+- If only positional `<query>` is provided, use positional queries.
+- If only `--query-file` is provided, use file queries.
+- If both are provided, concatenate (positional first, file second), then dedupe.
+- If neither provides at least one valid query, fail.
+
+## Query Input Rules (v2)
 
 Input:
 
 - Raw positional argument string from `SearchCmd.Query` or `SiteCmd.Query`.
+- Optional JSON file pointed to by `--query-file`.
 
 Rules:
 
-1. Split on comma (`,`).
-2. Trim whitespace per part.
-3. Drop empty entries.
+1. Parse positional input:
+   - Split on comma (`,`).
+   - Trim whitespace per part.
+   - Drop empty entries.
+2. Parse JSON file input (if present):
+   - Accept either a top-level string array:
+     - `["software engineer", "data scientist"]`
+   - Or an object containing `job_titles` string array:
+     - `{"job_titles":["software engineer","data scientist"]}`
+   - Trim whitespace and drop empty entries.
+3. Merge positional + file queries (positional first).
 4. Deduplicate queries case-insensitively while preserving first-seen order.
 
 Validation:
@@ -60,6 +93,8 @@ Validation:
 - If final query list is empty, return: `at least one non-empty query is required`.
 - Limit maximum queries to `10` to avoid accidental overload.
 - If query count exceeds `10`, return: `too many queries: max 10`.
+- If `--query-file` path is unreadable, return a file-read error with the path.
+- If JSON is invalid or schema is unsupported, return a clear schema-validation error.
 
 Examples:
 
@@ -67,6 +102,8 @@ Examples:
 - `"software engineer, hardware engineer"` -> `["software engineer","hardware engineer"]`
 - `"software engineer, , Data Scientist"` -> `["software engineer","Data Scientist"]`
 - `"Backend,backend, BACKEND"` -> `["Backend"]`
+- `--query-file queries.json` with `{"job_titles":["Backend","backend","SRE"]}` -> `["Backend","SRE"]`
+- positional `"Data Engineer"` + file `{"job_titles":["data engineer","ML Engineer"]}` -> `["Data Engineer","ML Engineer"]`
 
 ## Functional Behavior
 
@@ -126,54 +163,71 @@ multi-query aggregate.
   - command continues with successful sites.
   - failures are shown in verbose mode via existing `reportScraperFailures`.
 - Query parsing errors fail fast before network calls.
+- Query-file read/parse/validation errors fail fast before network calls.
 - Spinner remains one spinner for the overall command execution.
 
 ## Implementation Plan
 
-### 1) Query parsing helper
+### 1) Add query-file flag to search inputs
+
+- Extend search/site options with:
+  - `--query-file <path>` (string path to JSON)
+- Keep existing positional `<query>` argument for backward compatibility.
+
+### 2) Add JSON query loader helper
 
 Add helper in `internal/cmd/search.go` (or `internal/cmd/search_queries.go`):
 
-- `parseQueries(raw string) ([]string, error)`
+- `loadQueriesFromJSON(path string) ([]string, error)`
 
 Responsibilities:
 
-- split/trim/filter/dedupe
-- enforce max query count
-- return deterministic ordered list
+- read file content
+- parse supported schemas:
+  - top-level array of strings
+  - object with `job_titles` array
+- trim/filter empty entries
+- return deterministic ordered list or descriptive validation errors
 
-### 2) Refactor search execution path
+### 3) Unify query-source parsing
 
-Refactor `runSearch` to:
+Refactor parsing flow to produce one final query list from both sources:
 
-- Parse query list once.
-- Build shared runtime dependencies once per command:
-  - proxies
-  - rotator
-  - scraper registry
-  - selected scrapers
-- Loop through parsed queries and execute scraper searches.
-- Merge + dedupe accumulated jobs.
-- Apply existing output/seen/update flow once at the end.
+- `parseQueries(raw string)` for positional input
+- `loadQueriesFromJSON(path string)` for file input (optional)
+- `mergeAndNormalizeQueries(positional, fromFile []string) ([]string, error)`:
+  - positional first, then file
+  - case-insensitive dedupe preserving first-seen
+  - max query enforcement
+  - empty-final-list enforcement
 
-Suggested extraction:
+### 4) Keep execution pipeline unchanged after query list creation
 
-- `runScrapersForQuery(selected []scraper.Scraper, base models.SearchParams, query string) ([]models.Job, []scraperFailure, error)`
-- `mergeUniqueJobs(existing []models.Job, incoming []models.Job) []models.Job`
+After final query list is built:
 
-### 3) Keep site commands compatible
+- keep current per-query execution flow
+- keep per-query `--limit` behavior
+- keep merge/dedupe/sort behavior
+- keep seen-history behavior unchanged
 
-No command-surface change is required because `SiteCmd` already calls `runSearch`.
-After refactor, site commands automatically support comma-separated query input.
+### 5) Keep site commands compatible
 
-### 4) Docs updates (after implementation)
+Site commands already use the shared search path; they should gain
+`--query-file` behavior with no separate implementation path.
+
+### 6) Docs updates (after implementation)
 
 Update:
 
 - `README.md` quick start + flags notes
 - `docs/usage.md` search examples and multi-query notes
+- `docs/multi-search-spec.md` (this file) as the source of truth for JSON schema
 
-Include one explicit example showing comma-separated queries.
+Include examples for:
+
+- positional-only input
+- file-only input
+- positional + file merge input
 
 ## Test Plan
 
@@ -185,6 +239,11 @@ Unit tests in `internal/cmd/search_test.go`:
 - `parseQueries` case-insensitive dedupe preserves first token.
 - `parseQueries` max-query validation.
 - `parseQueries` empty input validation.
+- `loadQueriesFromJSON` with top-level array schema.
+- `loadQueriesFromJSON` with `job_titles` object schema.
+- `loadQueriesFromJSON` invalid JSON and unsupported schema.
+- query-source merge test (positional + file) with order-preserving dedupe.
+- query-source merge test enforcing max-10 across combined sources.
 
 Behavioral tests in `internal/cmd/search_test.go`:
 
@@ -192,17 +251,24 @@ Behavioral tests in `internal/cmd/search_test.go`:
 - `--new-only` on multi-query output returns unseen jobs only.
 - `--seen-update` updates history once with merged unseen jobs.
 - `--limit` applied per query before merge/dedup.
+- file-based query source triggers multi-query execution with identical semantics.
 
 Regression tests:
 
 - Single-query path produces same output as before for equivalent fixtures.
+- Existing positional multi-query behavior remains unchanged when `--query-file`
+  is not used.
 
 ## Acceptance Criteria
 
-1. `jobcli search "a,b,c"` executes searches for 3 queries in one command.
-2. Combined output removes duplicates across query overlaps.
-3. Seen workflow flags (`--seen`, `--new-only`, `--new-out`, `--seen-update`)
+1. `jobcli search --query-file queries.json` executes searches for all valid job
+   titles from the file.
+2. `jobcli search "a,b" --query-file queries.json` merges both sources,
+   preserves first-seen order, and deduplicates case-insensitively.
+3. Combined output removes duplicates across query overlaps.
+4. Seen workflow flags (`--seen`, `--new-only`, `--new-out`, `--seen-update`)
    work unchanged on merged results.
-4. Single-query behavior remains backward compatible.
-5. Usage docs include at least one multi-query example and semantics note for
-   `--limit`.
+5. Single-query positional behavior remains backward compatible.
+6. Invalid/missing/unsupported query file formats fail fast with clear errors.
+7. Usage docs include at least one `--query-file` example and semantics note for
+   combined-source query handling.
