@@ -1,27 +1,15 @@
 ---
 name: jobcli-cv-summary
-description: Build minimal persona artifacts for strict YES/HIGH job filtering.
-homepage: https://github.com/jimezsa/jobcli
-metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "📄",
-        "os": ["linux", "darwin"],
-        "requires": { "bins": [] },
-        "install": [],
-      },
-  }
+description: Build a single JobCLI query/persona JSON from a CV. Use when a user provides a CV and downstream steps must consume `profiles/<user_id>/persona_querie.json` via `jobcli --query-file` and the discriminator script.
 ---
 
-# CV Persona Builder (Minimal)
+# CV Persona JSON Builder
 
-Goal: create `CVSUMMARY.md` and `persona_profile.json` from a CV.
+Goal: create one canonical JSON persona artifact from a CV.
 
-Trigger: user provides one or more CV PDFs.
+Do not create `CVSUMMARY.md`.
 
 ## Inputs
-Per user:
 - `user_id` (slug: `[a-z0-9_-]`)
 - `cv_pdf_path`
 - `default_location` (optional)
@@ -30,55 +18,69 @@ Per user:
 ## Required Outputs
 Write under `profiles/<user_id>/`:
 - `resume.pdf`
-- `CVSUMMARY.md`
-- `persona_profile.json`
+- `persona_querie.json`
 
-## Required Persona Fields
-- `keywords_en` (array, exactly 6 realistic job titles in English)
-- `keywords_local` (array, exactly 6 realistic job titles in country language)
-- `target_roles` (array)
-- `excluded_roles_or_domains` (array)
-- `seniority_target` (`Junior|Mid|Mid-Senior|Senior|Staff+`)
-- `must_have_skills` (array, max 12)
-- `preferred_skills` (array, max 15)
-- `work_mode` (`Remote|Hybrid|Onsite|Flexible`)
-- `location_constraints` (array)
-- `language_requirements` (array)
+## `persona_querie.json` Contract
+Use this structure (same `--query-file` format as README/docs, plus persona data from the old markdown file):
 
-## CVSUMMARY.md Structure
-Use this exact section layout with bullet lists:
-- `# Persona Summary`
-- `## Keywords (English)`
-- `## Keywords (Local Language)`
-- `## Target Roles`
-- `## Excluded Roles/Domains`
-- `## Seniority Target`
-- `## Must-Have Skills`
-- `## Preferred Skills`
-- `## Work Mode`
-- `## Location Constraints`
-- `## Language Requirements`
-
-## persona_profile.json Contract
-Include these keys:
-- `user_id`
-- `default_location`
-- `default_country_code`
-- `keywords_en`
-- `keywords_local`
-- `target_roles`
-- `excluded_roles_or_domains`
-- `seniority_target`
-- `must_have_skills`
-- `preferred_skills`
-- `work_mode`
-- `location_constraints`
-- `language_requirements`
+```json
+{
+  "job_titles": [
+    "Software Engineer",
+    "Backend Engineer",
+    "Platform Engineer",
+    "DevOps Engineer",
+    "Site Reliability Engineer",
+    "Cloud Engineer",
+    "Softwareentwickler",
+    "Backend Entwickler",
+    "Plattformingenieur",
+    "DevOps Ingenieur",
+    "SRE Ingenieur",
+    "Cloud Ingenieur"
+  ],
+  "search_options": {
+    "location": "Munich, Germany",
+    "country": "de",
+    "sites": "all",
+    "limit": 20,
+    "hours": 48,
+    "seen": "profiles/<user_id>/jobs_seen.json",
+    "seen_update": true,
+    "new_only": true,
+    "output": "profiles/<user_id>/jobs_new_all.json"
+  },
+  "global_options": {
+    "json": true,
+    "plain": false,
+    "color": "auto",
+    "verbose": false
+  },
+  "persona": {
+    "user_id": "<user_id>",
+    "default_location": "Munich, Germany",
+    "default_country_code": "de",
+    "keywords_en": ["Software Engineer", "Backend Engineer", "Platform Engineer", "DevOps Engineer", "Site Reliability Engineer", "Cloud Engineer"],
+    "keywords_local": ["Softwareentwickler", "Backend Entwickler", "Plattformingenieur", "DevOps Ingenieur", "SRE Ingenieur", "Cloud Ingenieur"],
+    "target_roles": ["Software Engineer", "Backend Engineer"],
+    "excluded_roles_or_domains": ["Internship", "Working Student"],
+    "seniority_target": "Mid-Senior",
+    "must_have_skills": ["Go", "APIs", "Distributed Systems"],
+    "preferred_skills": ["Kubernetes", "AWS", "CI/CD"],
+    "work_mode": "Flexible",
+    "location_constraints": ["Germany", "EU Remote"],
+    "language_requirements": ["English B2+", "German B1+"]
+  }
+}
+```
 
 ## Rules
-1. Keep content short, explicit, and machine-friendly.
-2. Include hard exclusions to prevent cross-domain matches.
-3. **Always include these default exclusions** for non-student users:
+1. Keep content short, explicit, and machine-friendly in JSON only.
+2. Keep `job_titles` as realistic job titles only.
+3. `job_titles` must include all persona keywords that were previously stored in markdown keyword sections.
+4. Keep both `persona.keywords_en` and `persona.keywords_local`, with exactly 6 items each.
+5. Include hard exclusions to prevent cross-domain matches.
+6. Always include these default exclusions for non-student users:
    - Werkstudent
    - Intern
    - Internship
@@ -86,21 +88,17 @@ Include these keys:
    - Student Assistant
    - Working Student
    - HiWi
-   Add these to `excluded_roles_or_domains` unless user explicitly wants student positions.
-3. `## Keywords (English)` is required in `CVSUMMARY.md` and must contain exactly 6 keywords.
-4. `## Keywords (Local Language)` is required in `CVSUMMARY.md` and must contain exactly 6 keywords in the country language.
-5. Keywords are for job search only: each keyword must be a realistic job title used in job boards.
-6. Do not include skills, tools, technologies, certifications, or generic terms as keywords.
-7. Use one normalized job-title keyword per bullet and avoid duplicates inside each list.
+   Add them to `persona.excluded_roles_or_domains` unless the user explicitly wants student positions.
+7. Do not include skills, tools, technologies, certifications, or generic terms in `job_titles`.
 8. Remove personal identifiers (name, email, phone, address, IDs, employer/school names).
 9. Keep user data isolated under each `profiles/<user_id>/` directory.
 
 ## Validation
 Per user, confirm:
 1. `resume.pdf` exists.
-2. `CVSUMMARY.md` exists and includes both required keyword sections.
-3. `CVSUMMARY.md` contains exactly 6 bullets in `## Keywords (English)` and exactly 6 bullets in `## Keywords (Local Language)`.
-4. Every keyword in both sections is a job title phrase (not a skill/tool/certification term).
-5. `persona_profile.json` exists and has all required keys (including `keywords_en` and `keywords_local`).
+2. `persona_querie.json` exists and is valid JSON.
+3. `persona_querie.json` contains `job_titles`, `search_options`, `global_options`, and `persona`.
+4. `job_titles` include all entries from `persona.keywords_en` and `persona.keywords_local` (case-insensitive set containment).
+5. Every keyword in `job_titles`, `persona.keywords_en`, and `persona.keywords_local` is a realistic job title phrase.
 
 Next skill: `skills/jobcli-job-search/SKILL.md`.

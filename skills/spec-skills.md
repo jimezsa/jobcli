@@ -10,8 +10,7 @@ Define the required contract for the JobCLI skill workflow: build persona files,
 
 ## Required User-Scoped Files
 - `profiles/<user_id>/resume.pdf`
-- `profiles/<user_id>/CVSUMMARY.md`
-- `profiles/<user_id>/persona_profile.json`
+- `profiles/<user_id>/persona_querie.json`
 - `profiles/<user_id>/jobs_seen.json`
 - `profiles/<user_id>/jobs_filtered_out.json`
 - `profiles/<user_id>/jobs_yes_high.json`
@@ -26,23 +25,22 @@ Define the required contract for the JobCLI skill workflow: build persona files,
 
 ## Minimal End-to-End Flow
 1. Build persona artifacts from CV using `jobcli-cv-summary`.
-2. Retrieve unseen jobs with `jobcli search` and `--seen-update`.
-3. Aggregate results into `profiles/<user_id>/jobs_new_all.json`.
-4. Apply deterministic hard rejects (role/domain, seniority, work mode, location).
-5. Run discriminator:
+2. Retrieve unseen jobs with `jobcli search --query-file profiles/<user_id>/persona_querie.json` and `--seen-update`.
+3. Apply deterministic hard rejects (role/domain, seniority, work mode, location).
+4. Run discriminator:
 
 ```bash
 python3 skills/jobcli-job-search/scripts/job_discriminator.py \
-  --cvsummary profiles/<user_id>/CVSUMMARY.md \
+  --persona-json profiles/<user_id>/persona_querie.json \
   --jobs-json profiles/<user_id>/jobs_new_all.json \
   --min-confidence LOW \
   --output profiles/<user_id>/jobs_yes_high.json
 ```
 
-6. Return only jobs from `jobs_yes_high.json`.
-7. Keep persistent artifacts; remove temporary `jobs_new_keyword_*.json` and `jobs_new_all.json`.
+5. Return only jobs from `jobs_yes_high.json`.
+6. Keep persistent artifacts.
 
 ## Done Criteria
-- `CVSUMMARY.md` and `persona_profile.json` exist per user.
+- `persona_querie.json` exists per user.
 - `jobs_yes_high.json` contains only accepted jobs.
 - Rejected jobs do not reappear due to seen tracking.

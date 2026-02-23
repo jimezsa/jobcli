@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Filter jobs with an LLM using CVSUMMARY.md as persona input."""
+"""Filter jobs with an LLM using persona_querie.json as persona input."""
 
 import argparse
 import json
@@ -43,10 +43,57 @@ LOCATION_KEYS = ("location", "city", "region", "country")
 ID_KEYS = ("id", "job_id", "url", "link")
 COMPANY_KEYS = ("company", "company_name", "employer")
 CONFIDENCE_RANK = {"LOW": 0, "HIGH": 1}
+PERSONA_LIST_KEYS = (
+    "job_titles",
+    "keywords_en",
+    "keywords_local",
+    "target_roles",
+    "excluded_roles_or_domains",
+    "must_have_skills",
+    "preferred_skills",
+    "location_constraints",
+    "language_requirements",
+)
+PERSONA_SCALAR_KEYS = ("seniority_target", "work_mode", "default_location", "default_country_code")
 
 
 def read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def clean_str_list(value: Any) -> List[str]:
+    if not isinstance(value, list):
+        return []
+    out: List[str] = []
+    for item in value:
+        if isinstance(item, str):
+            item = item.strip()
+            if item:
+                out.append(item)
+    return out
+
+
+def compact_persona(profile: Dict[str, Any]) -> Dict[str, Any]:
+    persona_data = profile.get("persona")
+    persona = persona_data if isinstance(persona_data, dict) else {}
+
+    compact: Dict[str, Any] = {}
+    for key in PERSONA_LIST_KEYS:
+        if key == "job_titles":
+            compact[key] = clean_str_list(profile.get(key))
+        else:
+            compact[key] = clean_str_list(persona.get(key))
+
+    for key in PERSONA_SCALAR_KEYS:
+        value = persona.get(key)
+        if not isinstance(value, str) and key in {"default_location", "default_country_code"}:
+            value = profile.get(key)
+        if isinstance(value, str):
+            value = value.strip()
+            if value:
+                compact[key] = value
+
+    return compact
 
 
 def looks_like_job(obj: Any) -> bool:
@@ -117,19 +164,20 @@ def parse_decision(content: str) -> Dict[str, str]:
     return {"decision": decision, "confidence": confidence}
 
 
-def llm_compare(cvsummary: str, job: Dict[str, Any], api_key: str, model: str, api_url: str, timeout: int) -> Dict[str, str]:
+def llm_compare(persona_json: str, job: Dict[str, Any], api_key: str, model: str, api_url: str, timeout: int) -> Dict[str, str]:
     system_prompt = (
-        "You are a lenient job relevance filter. Compare one candidate CV summary and one job. "
+        "You are a lenient job relevance filter. Compare one candidate persona JSON and one job. "
         "Return JSON only with keys: decision, confidence. "
         "Rules: default to YES unless the job is clearly irrelevant. "
         "Use YES for any overlap in domain, skills, industry, or transferable experience. "
+        "Treat excluded_roles_or_domains as hard rejects unless the job strongly contradicts that exclusion text. "
         "Use NO only for obvious mismatches (e.g. software dev vs. nurse, unrelated industry with zero skill overlap). "
         "Use HIGH when the fit is strong; use LOW when the fit is partial but plausible. "
         "When in doubt, choose YES with LOW confidence."
     )
     user_prompt = (
-        "CVSUMMARY.md:\n"
-        f"{cvsummary}\n\n"
+        "PERSONA_JSON:\n"
+        f"{persona_json}\n\n"
         "JOB:\n"
         f"{json.dumps(compact_job(job), ensure_ascii=True)}\n\n"
         'Return exactly: {"decision":"YES|NO","confidence":"HIGH|LOW"}'
@@ -195,8 +243,8 @@ def is_accepted(result: Dict[str, str], min_confidence: str) -> bool:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Filter jobs with LLM using CVSUMMARY.md.")
-    parser.add_argument("--cvsummary", required=True, help="Path to CVSUMMARY.md")
+    parser = argparse.ArgumentParser(description="Filter jobs with LLM using persona_querie.json.")
+    parser.add_argument("--persona-json", required=True, help="Path to persona_querie.json")
     parser.add_argument("--jobs-json", required=True, help="Path to jobs JSON (list or nested structure)")
     parser.add_argument("--output", required=True, help="Output path for YES jobs JSON list")
     parser.add_argument("--api-key", default=DEFAULT_API_KEY, help="LLM API key (default: MINIMAX_API_KEY, fallback: ANTHROPIC_API_KEY/OPENAI_API_KEY)")
@@ -219,7 +267,10 @@ def main() -> int:
         return 1
 
     try:
-        cvsummary_text = Path(args.cvsummary).read_text(encoding="utf-8")
+        persona_data = read_json(Path(args.persona_json))
+        if not isinstance(persona_data, dict):
+            raise ValueError("persona JSON must be an object")
+        persona_text = json.dumps(compact_persona(persona_data), ensure_ascii=True)
         jobs_data = read_json(Path(args.jobs_json))
         jobs = collect_jobs_recursive(jobs_data)
     except Exception as exc:  # noqa: BLE001
@@ -237,7 +288,7 @@ def main() -> int:
         idx, job = idx_job
         try:
             result = llm_compare(
-                cvsummary=cvsummary_text,
+                persona_json=persona_text,
                 job=job,
                 api_key=args.api_key,
                 model=args.model,

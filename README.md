@@ -248,8 +248,8 @@ jobcli proxies check --target "https://www.google.com" --timeout 15
 
 The `skills/` directory contains ready-made skill files that let AI coding agents (OpenClaw, Cursor, Codex, etc.) use JobCLI on your behalf:
 
-- **`skills/jobcli-cv-summary/SKILL.md`** (`jobcli-cv-summary`) — reads one or more CV PDFs, creates a privacy-safe persona summary, and writes 20 search keywords to `profiles/<user_id>/CVSUMMARY.md`.
-- **`skills/jobcli-job-search/SKILL.md`** (`jobcli-job-search`) — reads `profiles/<user_id>/CVSUMMARY.md`, runs unseen-job searches per keyword, deduplicates, and ranks matches from 0.0 to 1.0.
+- **`skills/jobcli-cv-summary/SKILL.md`** (`jobcli-cv-summary`) — reads one or more CV PDFs and writes a privacy-safe persona/search profile to `profiles/<user_id>/persona_querie.json` (compatible with `--query-file`).
+- **`skills/jobcli-job-search/SKILL.md`** (`jobcli-job-search`) — reads `profiles/<user_id>/persona_querie.json`, runs unseen-job searches via `--query-file`, and keeps only `YES` matches above the configured confidence threshold.
 - **`skills/pirate-motivator/SKILL.md`** (`pirate-motivator`) — generates short pirate-style motivational audio for job-hunt encouragement.
 
 ## Notes

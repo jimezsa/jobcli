@@ -36,17 +36,15 @@ Goal: retrieve unseen jobs and keep only jobs classified as `YES` with configura
 
 ## Prerequisites
 
-- `profiles/<user_id>/CVSUMMARY.md`
-- optional: `profiles/<user_id>/persona_profile.json`
+- `profiles/<user_id>/persona_querie.json`
 - script: `skills/jobcli-job-search/scripts/job_discriminator.py`
 - API key: `MINIMAX_API_KEY` (fallbacks supported by script)
 
 ## Required User-Scoped Files
 
-- `profiles/<user_id>/CVSUMMARY.md`
+- `profiles/<user_id>/persona_querie.json`
 - `profiles/<user_id>/jobs_seen.json`
-- `profiles/<user_id>/jobs_new_keyword_<n>.json` (temp)
-- `profiles/<user_id>/jobs_new_all.json` (temp)
+- `profiles/<user_id>/jobs_new_all.json`
 - `profiles/<user_id>/jobs_filtered_out.json`
 - `profiles/<user_id>/jobs_yes_high.json`
 
@@ -54,39 +52,26 @@ Never mix files across users.
 
 ## Minimal Flow
 
-1. Load `CVSUMMARY.md` (required). If missing, run `jobcli-cv-summary` first.
-2. Build search queries from persona role targets.
-3. Retrieve unseen jobs per query with seen tracking:
+1. Load `persona_querie.json` (required). If missing, run `jobcli-cv-summary` first.
+2. Retrieve unseen jobs using `--query-file` (queries + defaults come from JSON):
 
 ```bash
-jobcli search "<query>" --location "<location>" --country "<code>" --limit 20 \
+jobcli search --query-file profiles/<user_id>/persona_querie.json \
   --seen profiles/<user_id>/jobs_seen.json --new-only --seen-update \
-  --json --output profiles/<user_id>/jobs_new_keyword_<n>.json --hours 48
+  --json --output profiles/<user_id>/jobs_new_all.json
 ```
 
-4. Aggregate query outputs into `profiles/<user_id>/jobs_new_all.json` using `jobcli` merge/dedupe:
-
-```bash
-for f in profiles/<user_id>/jobs_new_keyword_*.json; do
-  jobcli seen update \
-    --seen profiles/<user_id>/jobs_new_all.json \
-    --input "$f" \
-    --out profiles/<user_id>/jobs_new_all.json
-done
-```
-
-5. Apply deterministic hard rejects (role/domain mismatch, seniority mismatch, work-mode/location hard mismatch), write rejects to `profiles/<user_id>/jobs_filtered_out.json`, then run the LLM gate on remaining jobs:
+3. Apply deterministic hard rejects (role/domain mismatch, seniority mismatch, work-mode/location hard mismatch), write rejects to `profiles/<user_id>/jobs_filtered_out.json`, then run the LLM gate on remaining jobs:
 
 ```bash
 python3 skills/jobcli-job-search/scripts/job_discriminator.py \
-  --cvsummary profiles/<user_id>/CVSUMMARY.md \
+  --persona-json profiles/<user_id>/persona_querie.json \
   --jobs-json profiles/<user_id>/jobs_new_all.json \
   --min-confidence LOW \
-  --output profiles/<user_id>/filtered_jobs.json
+  --output profiles/<user_id>/jobs_yes_high.json
 ```
 
-6. Return only jobs from `filtered_jobs.json`.
-7. Remove temp files (`jobs_new_keyword_*.json`, `jobs_new_all.json`).
+4. Return only jobs from `jobs_yes_high.json`.
 
 ## Non-Negotiable Rules
 
