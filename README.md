@@ -4,6 +4,12 @@
   <img src="docs/assets/jobcli.png" alt="papercli banner" width="640"/>
 </p>
 
+<p align="center">
+  <a href="https://github.com/jimezsa/jobcli/actions/workflows/ci.yml?branch=main"><img src="https://img.shields.io/github/actions/workflow/status/jimezsa/jobcli/ci.yml?branch=main&style=for-the-badge" alt="CI status"></a>
+  <a href="https://github.com/jimezsa/jobcli/releases"><img src="https://img.shields.io/github/v/release/jimezsa/jobcli?include_prereleases&style=for-the-badge" alt="GitHub release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License"></a>
+</p>
+
 Fast, single-binary job aggregation CLI written in Go. Scrapes multiple sites in parallel and exports results to table, CSV, TSV, JSON, or Markdown.
 
 ![JobCLI Demo](docs/assets/jobcli_x5.gif)
