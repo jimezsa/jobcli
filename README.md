@@ -49,16 +49,16 @@ make
 jobcli
 
 # search software engineer roles in Munich, Germany
-jobcli search "software engineer" --location "Munich, Germany"  --limit 100 --hours 48
+jobcli search "software engineer" --location "Munich, Germany"  --limit 20 --hours 48
 
 # search multiple queries in one run (comma-separated)
 jobcli search "software engineer,hardware engineer,data scientist" --location "Munich, Germany" --limit 100 --hours 48
 
 # load queries from JSON file
-jobcli search --query-file queries.json --location "Munich, Germany" --limit 100 --hours 48
+jobcli search --query-file queries.json --location "Munich, Germany" --limit 200 --hours 48
 
 # search a single site last 48 hours
-jobcli linkedin "chemical engineer" --location "Munich, Germany"  --limit 10 --hours 48
+jobcli linkedin "chemical engineer" --location "Munich, Germany"  --limit 20 --hours 48
 
 # output only unseen jobs using a seen-history JSON , update seen jobs (jobs_seen.json)
 jobcli search "software engineer" --location "Munich, Germany" --limit 30 --hours 48 \
@@ -73,6 +73,8 @@ jobcli search "software engineer" --location "Munich, Germany" --country de --pr
 
 
 ```
+
+Recommendation: do not use LinkedIn scraping too intensively; prefer `--limit 20` instead of very high values like `--limit 200`.
 
 Example `queries.json`:
 
@@ -206,31 +208,6 @@ Notes:
 - `--query-file` accepts `["backend","platform"]`, `{"job_titles":["backend","platform"]}`, or a full profile object with optional `search_options` and `global_options`.
 - Option precedence is: explicit CLI flags > query-file defaults > env/config defaults.
 - Positional and file queries can be combined; positional entries are applied first, then deduped case-insensitively.
-
-## Seen Jobs Workflow
-
-Use this when you want only fresh jobs in recurring runs.
-
-```bash
-# 1) scrape and keep only unseen jobs (C = A - B)
-jobcli search "hardware engineer" --location "Munich, Germany" --limit 30 \
-  --seen jobs_seen.json --new-only --json --output jobs_new.json
-
-# If you want to auto-mark new jobs as "seen" in the same run (no separate
-# `jobcli seen update` step), add --seen-update:
-# jobcli search "hardware engineer" --location "Munich, Germany" --limit 30 \
-#   --seen jobs_seen.json --new-only --seen-update --json --output jobs_new.json
-
-# If you want to keep the primary output as "all jobs" (table/CSV/etc) but still
-# write unseen jobs to JSON, use --new-out (no --new-only needed):
-# jobcli search "hardware engineer" --location "Munich, Germany" --limit 30 \
-#   --seen jobs_seen.json --format csv --output jobs_all.csv --new-out jobs_new.json
-
-# 2) (optional) rank/review jobs_new.json with your own tooling
-
-# 3) persist accepted/new jobs back into seen history
-jobcli seen update --seen jobs_seen.json --input jobs_new.json --out jobs_seen.json --stats
-```
 
 ## Config
 
