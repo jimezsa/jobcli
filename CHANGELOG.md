@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added `skills/pdf-cv-to-latex/` with a workflow for converting CV/resume PDFs into visually matched LaTeX sources, including tooling checks, extraction steps, color sampling, asset handling, and a reusable gradient-header template.
+
 ## [0.2.1] - 2026-02-25
 
 ### Added
