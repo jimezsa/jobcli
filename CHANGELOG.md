@@ -5,6 +5,11 @@
 ### Added
 
 - Added `skills/pdf-cv-to-latex/` with a workflow for converting CV/resume PDFs into visually matched LaTeX sources, including tooling checks, extraction steps, color sampling, asset handling, and a reusable gradient-header template.
+- Added `skills/tailor-latex-cv-to-job/` with a workflow for tailoring LaTeX CVs to job postings, including an OpenAI agent prompt, truth-preserving tailoring policy, workspace creation helper, and ATS text/keyword report script.
+
+### Changed
+
+- Updated README presentation with a project banner, status badges, refreshed examples, LinkedIn scraping guidance, and a more prominent AI Agent Skills section.
 
 ## [0.2.1] - 2026-02-25
 
