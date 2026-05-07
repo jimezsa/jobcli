@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tailor LaTeX CV to Job"
+  short_description: "Tailor CVs for job applications"
+  default_prompt: "Use $tailor-latex-cv-to-job to tailor this LaTeX CV to the job link, keep the source unchanged, regenerate the PDF, and report ATS coverage."
