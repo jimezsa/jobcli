@@ -7,6 +7,11 @@ Define the required contract for the JobCLI skill workflow: build persona files,
 - `skills/jobcli-cv-summary/SKILL.md`
 - `skills/jobcli-job-search/SKILL.md`
 - `skills/jobcli-job-search/scripts/job_discriminator.py`
+- `skills/pdf-cv-to-latex/SKILL.md`
+- `skills/tailor-latex-cv-to-job/SKILL.md`
+- `skills/apply-to-job/SKILL.md`
+- `skills/apply-to-job/scripts/create_application_workspace.py`
+- `skills/browser-use/SKILL.md`
 
 ## Required User-Scoped Files
 - `profiles/<user_id>/resume.pdf`

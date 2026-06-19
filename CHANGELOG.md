@@ -6,6 +6,8 @@
 
 - Added `skills/pdf-cv-to-latex/` with a workflow for converting CV/resume PDFs into visually matched LaTeX sources, including tooling checks, extraction steps, color sampling, asset handling, and a reusable gradient-header template.
 - Added `skills/tailor-latex-cv-to-job/` with a workflow for tailoring LaTeX CVs to job postings, including an OpenAI agent prompt, truth-preserving tailoring policy, workspace creation helper, and ATS text/keyword report script.
+- Added `skills/apply-to-job/` with an end-to-end application workflow that tailors the CV via `tailor-latex-cv-to-job`, drives the application form in a real browser via `browser-use`, fills fields from a cached `application_profile.json`, screenshots the review page for explicit human approval, and only then clicks submit. Includes `scripts/create_application_workspace.py` and `references/form-fill-hints.md`.
+- Added `skills/browser-use/` with a generic guide for the `browser-use` CLI: environment setup, command reference, named sessions, persistent profiles for authenticated sites (e.g. LinkedIn), and troubleshooting.
 
 ### Changed
 
