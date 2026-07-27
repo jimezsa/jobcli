@@ -38,7 +38,7 @@ Goal: retrieve unseen jobs and keep only jobs classified as `YES` with configura
 
 - `profiles/<user_id>/persona_querie.json`
 - script: `skills/jobcli-job-search/scripts/job_discriminator.py`
-- API key: `MINIMAX_API_KEY` (fallbacks supported by script)
+- API key: `OPENROUTER_API_KEY`
 
 ## Required User-Scoped Files
 
