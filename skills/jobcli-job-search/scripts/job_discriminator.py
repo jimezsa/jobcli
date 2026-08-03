@@ -31,7 +31,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 load_dotenv(_PROJECT_ROOT / ".env")
 
 DEFAULT_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-DEFAULT_MODEL = "minimax/minimax-m2"
+DEFAULT_MODEL = "google/gemini-3.1-flash-lite"
 DEFAULT_API_URL = os.environ.get(
     "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1/chat/completions"
 )
