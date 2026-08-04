@@ -28,6 +28,8 @@ def load_dotenv(path: Path = Path(".env")) -> None:
 
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+# .env.local first: load_dotenv uses setdefault, so earlier files win.
+load_dotenv(_PROJECT_ROOT / ".env.local")
 load_dotenv(_PROJECT_ROOT / ".env")
 
 DEFAULT_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
