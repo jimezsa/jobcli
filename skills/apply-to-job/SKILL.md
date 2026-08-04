@@ -106,6 +106,8 @@ Visa status, salary expectation, etc. fall in this bucket — ask once, cache fo
 
 Use `browser-use` per `skills/browser-use/SKILL.md`. Always run headed so the human can see what's happening on a visible display.
 
+> **Never attach to a browser that is already running on the host.** Auto-detected "chrome" may actually be Brave or another Chromium fork (Shields silently kill SSO cookies, and CDP-attach hits the manual `chrome://inspect` approval gate). Always launch a dedicated Chromium the agent fully owns: Playwright's bundled Chrome for Testing with its own `--remote-debugging-port=9222` and a persistent `--user-data-dir` (`outputs/chromium-profile`), driven via `BU_CDP_URL=http://127.0.0.1:9222`.
+
 For LinkedIn URLs use the persistent profile + the `linkedin` named session:
 
 ```bash
@@ -180,13 +182,21 @@ When the human replies with explicit approval ("apply" / "submit" / "send it" / 
 4. Wait briefly for the confirmation page to load. Take `screenshots/100-post-submit.png`.
 5. Update `STATUS.md` to `submitted` **and** update the row's `status` in `applications/APPLICATIONS.md` to `submitted`, with the submit timestamp in `notes`.
 6. Surface `screenshots/100-post-submit.png` to the human so the confirmation page is visible.
-7. Close the named browser session: `browser-use --session "<name>" close`.
+7. **Shut down the entire browser to free RAM.** Close every session opened during this application, then verify nothing is left running:
+
+   ```bash
+   browser-use --session "apply-<company-slug>" close   # per-application session
+   browser-use --session linkedin close                 # only if the LinkedIn session was used
+   browser-use sessions                                 # must show no active sessions — close any leftovers by name
+   ```
+
+   Closing the `linkedin` session is safe: its login cookies live in the persistent `--profile` directory on disk and survive the next launch. No browser window may remain open after a successful submit.
 
 If the click does not produce a confirmation page (validation error toast, network error, captcha), screenshot the result, report it honestly, leave status as `ready-to-submit`, and ask the human what to do. Do not retry blindly or fabricate a confirmation.
 
 If the human's reply is **"wait"**, leave status at `ready-to-submit` and stop.
 If the reply is **"change <field>"**, edit the indicated field via `browser-use` and return to Step 7.
-If the reply is **"withdraw"**, update status to `withdrawn`, close the browser session, and stop.
+If the reply is **"withdraw"**, update status to `withdrawn`, shut down the browser entirely (same teardown as sub-step 7 above), and stop.
 
 ### Step 9 — Follow-up updates
 
@@ -205,6 +215,7 @@ If the human later reports a follow-up (rejection email, interview invite, offer
 - If the human approved, `100-post-submit.png` (the confirmation page) was captured and surfaced too.
 - `application_profile.json` has been updated with any newly answered runtime prompts.
 - Final summary lists: company, role, workspace path, fields the human supplied at runtime, any honest gaps from the ATS report, and clearly states whether the agent clicked submit on the human's approval (with timestamp), is parked at `ready-to-submit`, or was withdrawn.
+- After a `submitted` (or `withdrawn`) outcome, no browser sessions remain — `browser-use sessions` shows none. Only a `ready-to-submit` park keeps its session alive for the pending approval.
 
 ## Failure Modes & Recovery
 
